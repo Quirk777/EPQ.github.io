@@ -9,3 +9,4 @@ slowapi
 python-dotenv
 psycopg2-binary
 itsdangerous
+email-validator

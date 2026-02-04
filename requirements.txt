@@ -1,5 +1,7 @@
 ﻿fastapi
 uvicorn
+pydantic[email]
+starlette
 matplotlib
 pdfkit
 questionary

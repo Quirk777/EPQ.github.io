@@ -2,10 +2,10 @@
 FROM python:3.11-slim
 
 # Install system dependencies including wkhtmltopdf
-RUN apt-get update && apt-get install -y \\
-    wkhtmltopdf \\
-    xvfb \\
-    && apt-get clean \\
+RUN apt-get update && apt-get install -y \
+    wkhtmltopdf \
+    xvfb \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Set wkhtmltopdf path for Railway environment  

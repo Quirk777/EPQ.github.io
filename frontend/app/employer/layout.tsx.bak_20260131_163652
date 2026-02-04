@@ -1,0 +1,184 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+const SUB_KEY = "epq_subscribed";
+
+export default function EmployerLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || "";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const isLogin = pathname === "/employer/login";
+  const isSignup = pathname === "/employer/signup";
+  const isHelp = pathname.startsWith("/employer/help");
+  const isSubscribe = pathname.startsWith("/employer/subscribe");
+
+  const allowAnon = isLogin || isSignup || isHelp;
+
+  const [checking, setChecking] = useState(!allowAnon);
+  const [authed, setAuthed] = useState(allowAnon);
+  const [subscribed, setSubscribed] = useState(false);
+
+  const nextUrl = useMemo(() => {
+    const n = searchParams?.get("next");
+    return n && n.startsWith("/") ? n : "/employer/dashboard";
+  }, [searchParams]);
+
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem(SUB_KEY);
+      setSubscribed(v === "true");
+    } catch {
+      setSubscribed(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    if (allowAnon) {
+      setChecking(false);
+      setAuthed(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setChecking(true);
+
+      try {
+        const res = await fetch("/api/employer/submissions", { credentials: "include" });
+
+        if (cancelled) return;
+
+        if (res.status === 401) {
+          router.replace("/employer/login?next=" + encodeURIComponent(pathname));
+          setAuthed(false);
+          return;
+        }
+
+        setAuthed(true);
+      } catch {
+        setAuthed(true);
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [allowAnon, pathname, router]);
+
+  useEffect(() => {
+    if (!allowAnon && authed && !isSubscribe) {
+      let hasSub = false;
+      try { hasSub = window.localStorage.getItem(SUB_KEY) === "true"; } catch {}
+      if (!hasSub) {
+        router.replace("/employer/subscribe?next=" + encodeURIComponent(pathname));
+      }
+    }
+  }, [allowAnon, authed, isSubscribe, pathname, router]);
+
+  const shell: React.CSSProperties = {
+    minHeight: "100vh",
+    background: "#fbfbfd",
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+  };
+
+  const topbar: React.CSSProperties = {
+    borderBottom: "1px solid rgba(0,0,0,0.08)",
+    background: "rgba(255,255,255,0.85)",
+    backdropFilter: "blur(10px)",
+    position: "sticky",
+    top: 0,
+    zIndex: 50,
+  };
+
+  const wrap: React.CSSProperties = {
+    maxWidth: 1120,
+    margin: "0 auto",
+    padding: "12px 18px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  };
+
+  const chip: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "8px 10px",
+    borderRadius: 999,
+    border: "1px solid rgba(0,0,0,0.14)",
+    background: "#fff",
+    color: "#111",
+    textDecoration: "none",
+    fontSize: 13,
+    fontWeight: 750,
+    whiteSpace: "nowrap",
+  };
+
+  const pill: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "7px 10px",
+    borderRadius: 999,
+    border: "1px solid rgba(0,0,0,0.14)",
+    background: "rgba(255,255,255,0.70)",
+    color: "#111",
+    fontSize: 12,
+    fontWeight: 800,
+  };
+
+  return (
+    <div style={shell}>
+      <div style={topbar}>
+        <div style={wrap}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 14,
+              background: "#111", color: "#fff",
+              display: "grid", placeItems: "center",
+              fontWeight: 900, letterSpacing: 0.5
+            }}>EPQ</div>
+            <div>
+              <div style={{ fontWeight: 950, fontSize: 14, lineHeight: 1.1 }}>Employer Portal</div>
+              <div style={{ color: "#64748b", fontSize: 12 }}>Protected area</div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <Link href="/" style={chip}>Home</Link>
+            <Link href="/employer/help" style={chip}>Help</Link>
+            <Link href="/employer/dashboard" style={chip}>Dashboard</Link>
+            <Link href="/employer/epq" style={chip}>Create assessment</Link>
+            <Link href="/employer/login" style={{ ...chip, background: "#111", color: "#fff" }}>Login</Link>
+
+            {!allowAnon ? (
+              <span style={pill}>
+                {subscribed ? "Subscription: Active ✅" : "Subscription: Required 🔒"}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {checking ? (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: 22, color: "#475569" }}>
+          Checking session…
+        </div>
+      ) : authed ? (
+        <div>{children}</div>
+      ) : (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: 22, color: "#475569" }}>
+          Redirecting to login…
+          <div style={{ marginTop: 8, fontSize: 13, color: "#64748b" }}>
+            If you aren’t redirected, <Link href={"/employer/login?next=" + encodeURIComponent(nextUrl)}>click here</Link>.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

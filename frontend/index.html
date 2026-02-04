@@ -1,0 +1,56 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EPQ App</title>
+  <link rel="stylesheet" href="/frontend/styles.css" />
+</head>
+<body>
+  <h1>EPQ Portal</h1>
+
+  <section aria-labelledby="employer-heading">
+    <h2 id="employer-heading">Employer</h2>
+
+    <div>
+      <label for="emp-username">Username:</label>
+      <input id="emp-username" name="username" />
+
+      <label for="emp-password">Password:</label>
+      <input id="emp-password" name="password" type="password" />
+
+      <button id="emp-register" type="button">Register</button>
+      <button id="emp-login" type="button">Login</button>
+    </div>
+
+    <div id="emp-area" style="display:none;">
+      <h3>Create 20-question assessment</h3>
+      <div id="emp-questions" aria-live="polite"></div>
+      <button id="emp-create" type="button">Create Assessment</button>
+
+      <h3>Dashboard</h3>
+      <button id="emp-refresh" type="button">Refresh Dashboard</button>
+      <pre id="emp-dashboard" aria-live="polite"></pre>
+    </div>
+  </section>
+
+  <hr />
+
+  <section aria-labelledby="applicant-heading">
+    <h2 id="applicant-heading">Applicant</h2>
+
+    <label for="app-assessment-id">Assessment ID:</label>
+    <input id="app-assessment-id" name="assessment_id" />
+    <button id="app-load" type="button">Load Questions</button>
+
+    <div id="app-questions" aria-live="polite"></div>
+    <button id="app-submit" type="button" style="display:none;">Submit Answers</button>
+
+    <pre id="app-result" aria-live="polite"></pre>
+  </section>
+
+  <!-- Use /frontend/app.js by default. If your file is under /frontend/static/app.js,
+       change the src accordingly. Use "defer" to ensure DOM is ready. -->
+  <script src="/frontend/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+﻿import { proxy } from "../../../../_proxy";
+
+export async function POST(req: Request, ctx: { params: { roleId: string } }) {
+  const roleId = ctx.params.role_id;
+  return proxy(req, `/employer/roles/${roleId}/assessment`);
+}

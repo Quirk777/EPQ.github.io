@@ -1,0 +1,130 @@
+﻿"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+type Props = { params: { roleId: string } };
+
+export default function RoleSetup({ params }: Props) {
+  const roleId = params.role_id;
+  const [environment, setEnvironment] = useState("moderate");
+  const [maxQuestions, setMaxQuestions] = useState(20);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function createBaseline() {
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/employer/roles/${encodeURIComponent(roleId)}/assessment`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ environment, max_questions: maxQuestions })
+      });
+      const j = await r.json();
+      setAssessmentId(j?.assessment_id || null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const applicantLink = assessmentId ? `/applicant/${assessmentId}` : null;
+
+  return (
+    <main style={{ padding: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Role Setup</h1>
+          <div style={{ marginTop: 6, opacity: 0.75 }}>Role ID: {roleId}</div>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href={`/employer/roles/${roleId}`} style={chip()}>Back to role dashboard</Link>
+          <Link href="/employer/dashboard" style={chip()}>Back to master</Link>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14, padding: 14, border: "1px solid #e5e7eb", borderRadius: 16, background: "#fff" }}>
+        <div style={{ fontWeight: 950 }}>Baseline settings (Phase 1)</div>
+
+        <div style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 520 }}>
+          <label style={{ fontWeight: 900 }}>
+            Environment
+            <select value={environment} onChange={(e) => setEnvironment(e.target.value)} style={field()}>
+              <option value="low">low</option>
+              <option value="moderate">moderate</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+
+          <label style={{ fontWeight: 900 }}>
+            Applicant question limit
+            <input
+              type="number"
+              value={maxQuestions}
+              onChange={(e) => setMaxQuestions(parseInt(e.target.value || "20", 10))}
+              min={5}
+              max={200}
+              style={field()}
+            />
+          </label>
+
+          <button
+            onClick={createBaseline}
+            disabled={busy}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid #111827",
+              background: "#111827",
+              color: "#fff",
+              fontWeight: 950,
+              cursor: "pointer",
+              opacity: busy ? 0.7 : 1
+            }}
+          >
+            {busy ? "Creatingâ€¦" : "Create/Update baseline + generate applicant link"}
+          </button>
+        </div>
+
+        {assessmentId ? (
+          <div style={{ marginTop: 14, padding: 12, borderRadius: 12, border: "1px solid #eef2f7", background: "#fafafa" }}>
+            <div style={{ fontWeight: 900 }}>Assessment ID</div>
+            <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", marginTop: 6 }}>{assessmentId}</div>
+
+            <div style={{ fontWeight: 900, marginTop: 12 }}>Applicant link</div>
+            <a href={applicantLink!} style={{ display: "inline-block", marginTop: 6, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+              {applicantLink}
+            </a>
+
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
+              This link routes applicants into this role automatically.
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </main>
+  );
+}
+
+function field() {
+  return {
+    width: "100%",
+    marginTop: 6,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid #e5e7eb",
+    outline: "none",
+    fontWeight: 700
+  } as const;
+}
+
+function chip() {
+  return {
+    padding: "10px 12px",
+    borderRadius: 999,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    textDecoration: "none",
+    fontWeight: 900,
+    color: "inherit"
+  } as const;
+}

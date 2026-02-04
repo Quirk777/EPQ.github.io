@@ -1,0 +1,235 @@
+﻿"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import ProfileMenu from "../_components/ProfileMenu";
+import { computeInsights, type Submission } from "../_lib/insights";
+
+export default function ProfileClient() {
+  const [loading, setLoading] = useState(true);
+  const [subs, setSubs] = useState<Submission[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Try to infer "account" info from any available endpoint (optional).
+  // This will not crash if it fails.
+  const [email, setEmail] = useState<string | undefined>(undefined);
+  const [companyName, setCompanyName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    async function run() {
+      try {
+        setLoading(true);
+        setErr(null);
+
+        // 1) submissions for insights
+        const r = await fetch("/api/employer/submissions", { cache: "no-store" });
+        const t = await r.text();
+        const data = t ? JSON.parse(t) : [];
+        const list = Array.isArray(data) ? data : (data?.submissions ?? data?.items ?? []);
+        setSubs(Array.isArray(list) ? list : []);
+
+        // 2) optional: try to hit a "me" endpoint if you have it
+        // If you don't, this fails silently.
+        try {
+          const me = await fetch("/api/employer/me", { cache: "no-store" });
+          if (me.ok) {
+            const mj = await me.json();
+            setEmail(mj?.email);
+            setCompanyName(mj?.company_name || mj?.companyName);
+          }
+        } catch {}
+
+      } catch (e: any) {
+        setErr(String(e?.message ?? e));
+      } finally {
+        setLoading(false);
+      }
+    }
+    run();
+  }, []);
+
+  const insights = useMemo(() => computeInsights(subs), [subs]);
+
+  return (
+    <main style={{ maxWidth: 980, margin: "32px auto", padding: "0 16px" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 28 }}>Employer Profile</h1>
+          <div style={{ marginTop: 6, opacity: 0.7 }}>
+            Manage settings and view applicant trends over time.
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <Link href="/employer/dashboard" style={{ textDecoration: "none", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+            Back to dashboard
+          </Link>
+          <ProfileMenu email={email} companyName={companyName} />
+        </div>
+      </header>
+
+      {err ? (
+        <div style={{ marginTop: 16, padding: 12, border: "1px solid #fecaca", background: "#fff1f2", borderRadius: 12 }}>
+          Error loading profile: {err}
+        </div>
+      ) : null}
+
+      <section id="account" style={{ marginTop: 22 }}>
+        <Card title="Account">
+          <Row label="Company" value={companyName || "Employer"} />
+          <Row label="Email" value={email || "(not available)"} />
+          <Row label="Security" value="Password login (demo). Add 2FA later." />
+        </Card>
+      </section>
+
+      <section id="subscription" style={{ marginTop: 18 }}>
+        <Card title="Subscription">
+          <div style={{ opacity: 0.8, lineHeight: 1.6 }}>
+            <div><b>Plan:</b> Demo / Pilot</div>
+            <div><b>Status:</b> Active</div>
+            <div style={{ marginTop: 10, fontSize: 13, opacity: 0.75 }}>
+              (Next step: wire this to real billing. For demo, it’s a professional placeholder.)
+            </div>
+          </div>
+          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button style={btn()}>Manage billing</button>
+            <button style={btn()}>Invoice history</button>
+            <button style={btn()}>Cancel subscription</button>
+          </div>
+        </Card>
+      </section>
+
+      <section id="settings" style={{ marginTop: 18 }}>
+        <Card title="Settings">
+          <div style={{ display: "grid", gap: 10 }}>
+            <Toggle label="Email updates" desc="Receive helpful tips, product updates, and weekly insights." defaultOn />
+            <Toggle label="Weekly insights report" desc="One email per week with trends & correlations." defaultOn />
+            <Toggle label="New submission alerts" desc="Instant email when a candidate completes an assessment." defaultOn={false} />
+          </div>
+        </Card>
+      </section>
+
+      <section id="insights" style={{ marginTop: 18 }}>
+        <Card title="Applicant Insights">
+          {loading ? (
+            <div style={{ opacity: 0.75 }}>Crunching numbers…</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+                <Metric label="Total submissions" value={String(insights.totals.total)} />
+                <Metric label="Last 7 days" value={String(insights.totals.last7)} />
+                <Metric label="Last 30 days" value={String(insights.totals.last30)} />
+                <Metric label="Avg signal" value={String(insights.totals.avgSignal)} />
+              </div>
+
+              <div style={{ marginTop: 14, opacity: 0.8, lineHeight: 1.6 }}>
+                <b>Signal</b> is a simple “overall strength” number we compute from your data:
+                if your backend returns an overall average, we use it; otherwise we use the mean of construct averages.
+              </div>
+
+              <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+                <MiniTable
+                  title="Weekly trend (avg signal)"
+                  headers={["Week", "Count", "Avg"]}
+                  rows={insights.weeklyTrend.map(w => [w.label, String(w.count), String(w.avgSignal)])}
+                />
+                <MiniTable
+                  title="Top constructs (mean ± std)"
+                  headers={["Construct", "N", "Mean", "Std"]}
+                  rows={insights.constructsSummary.map(c => [c.construct, String(c.count), String(c.mean), String(c.std)])}
+                />
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <MiniTable
+                  title="Strongest correlations (Pearson r)"
+                  headers={["A", "B", "r"]}
+                  rows={insights.topCorrelations.map(c => [c.a, c.b, String(c.r)])}
+                />
+                <div style={{ marginTop: 10, fontSize: 13, opacity: 0.75, lineHeight: 1.6 }}>
+                  Correlations are computed across submissions using construct averages.
+                  Big |r| means those traits move together in your applicant pool.
+                  (This helps you spot “clusters” like high autonomy often traveling with high ambiguity tolerance, etc.)
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
+      </section>
+
+      <footer style={{ marginTop: 26, opacity: 0.6, fontSize: 12 }}>
+        EPQ Insights are informational and evolve as more applicants complete assessments.
+      </footer>
+    </main>
+  );
+}
+
+function Card({ title, children }: { title: string; children: any }) {
+  return (
+    <div style={{ border: "1px solid #e5e7eb", borderRadius: 16, padding: 16, background: "#fff" }}>
+      <div style={{ fontWeight: 800, marginBottom: 10 }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+      <div style={{ opacity: 0.75 }}>{label}</div>
+      <div style={{ fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ border: "1px solid #eef2f7", borderRadius: 14, padding: 12, background: "#fafafa" }}>
+      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, marginTop: 4 }}>{value}</div>
+    </div>
+  );
+}
+
+function MiniTable({ title, headers, rows }: { title: string; headers: string[]; rows: string[][] }) {
+  return (
+    <div style={{ border: "1px solid #eef2f7", borderRadius: 14, padding: 12, background: "#fafafa" }}>
+      <div style={{ fontWeight: 800, marginBottom: 10 }}>{title}</div>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${headers.length}, 1fr)`, gap: 8, fontSize: 12, opacity: 0.7 }}>
+          {headers.map(h => <div key={h} style={{ fontWeight: 700 }}>{h}</div>)}
+        </div>
+        {rows.slice(0, 10).map((r, idx) => (
+          <div key={idx} style={{ display: "grid", gridTemplateColumns: `repeat(${headers.length}, 1fr)`, gap: 8, fontSize: 13 }}>
+            {r.map((c, i) => <div key={i} style={{ fontFamily: i === 0 ? "inherit" : "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{c}</div>)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ label, desc, defaultOn }: { label: string; desc: string; defaultOn: boolean }) {
+  const [on, setOn] = useState(defaultOn);
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: 12, border: "1px solid #eef2f7", borderRadius: 14, background: "#fafafa" }}>
+      <div>
+        <div style={{ fontWeight: 800 }}>{label}</div>
+        <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4, lineHeight: 1.5 }}>{desc}</div>
+      </div>
+      <button onClick={() => setOn(v => !v)} style={{ ...btn(), minWidth: 92 }}>
+        {on ? "On" : "Off"}
+      </button>
+    </div>
+  );
+}
+
+function btn() {
+  return {
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    cursor: "pointer",
+    fontWeight: 700,
+  } as const;
+}

@@ -1,0 +1,202 @@
+﻿[
+    {
+        "choices":  [
+                        "Prefer long uninterrupted focus",
+                        "Occasional interruptions are fine",
+                        "Frequent switching is fine",
+                        "I thrive in constant switching"
+                    ],
+        "prompt":  "In this role, how comfortable are you with frequent task switching and interruptions?",
+        "id":  "Q1"
+    },
+    {
+        "choices":  [
+                        "Very structured",
+                        "Some structure",
+                        "Flexible",
+                        "Highly unstructured/ambiguous"
+                    ],
+        "prompt":  "How much structure do you prefer in daily work?",
+        "id":  "Q2"
+    },
+    {
+        "choices":  [
+                        "Prefer complete information",
+                        "Some uncertainty is ok",
+                        "Often decide with partial info",
+                        "Very comfortable with uncertainty"
+                    ],
+        "prompt":  "How comfortable are you making decisions with incomplete information?",
+        "id":  "Q3"
+    },
+    {
+        "choices":  [
+                        "Prefer stable priorities",
+                        "Occasional changes are ok",
+                        "Frequent changes are ok",
+                        "I enjoy rapid change"
+                    ],
+        "prompt":  "How do you feel about fast-changing priorities?",
+        "id":  "Q4"
+    },
+    {
+        "choices":  [
+                        "Minimal interaction",
+                        "Some interaction",
+                        "Regular interaction",
+                        "Constant collaboration"
+                    ],
+        "prompt":  "How much social interaction do you prefer during work?",
+        "id":  "Q5"
+    },
+    {
+        "choices":  [
+                        "Prefer relaxed timelines",
+                        "Deadlines sometimes",
+                        "Comfortable with deadlines",
+                        "I perform best under tight deadlines"
+                    ],
+        "prompt":  "How do you respond to strict deadlines?",
+        "id":  "Q6"
+    },
+    {
+        "choices":  [
+                        "Prefer minimal physical demand",
+                        "Some physical work is ok",
+                        "Comfortable with physical work",
+                        "Very comfortable with high physical demand"
+                    ],
+        "prompt":  "How comfortable are you with physical demands or standing for long periods (if required)?",
+        "id":  "Q7"
+    },
+    {
+        "choices":  [
+                        "Rare feedback",
+                        "Occasional feedback",
+                        "Regular feedback",
+                        "Frequent, real-time feedback"
+                    ],
+        "prompt":  "How do you prefer feedback from supervisors?",
+        "id":  "Q8"
+    },
+    {
+        "choices":  [
+                        "Prefer close guidance",
+                        "Some independence",
+                        "Mostly independent",
+                        "Highly independent/self-directed"
+                    ],
+        "prompt":  "How comfortable are you working independently without guidance?",
+        "id":  "Q9"
+    },
+    {
+        "choices":  [
+                        "Prefer variety",
+                        "Some repetition is ok",
+                        "Comfortable with repetition",
+                        "I can sustain repetition easily"
+                    ],
+        "prompt":  "How do you handle repetitive tasks?",
+        "id":  "Q10"
+    },
+    {
+        "choices":  [
+                        "Prefer minimal procedures",
+                        "Some procedures ok",
+                        "Comfortable with strict procedures",
+                        "I value strict compliance"
+                    ],
+        "prompt":  "How comfortable are you with safety procedures and compliance requirements?",
+        "id":  "Q11"
+    },
+    {
+        "choices":  [
+                        "Prefer quiet",
+                        "Some noise ok",
+                        "Noise is fine",
+                        "I thrive in busy/noisy settings"
+                    ],
+        "prompt":  "How do you handle working in noisy or busy environments (if applicable)?",
+        "id":  "Q12"
+    },
+    {
+        "choices":  [
+                        "Prefer low pressure",
+                        "Some pressure ok",
+                        "Often under pressure",
+                        "High pressure teamwork is fine"
+                    ],
+        "prompt":  "How comfortable are you coordinating with a team under time pressure?",
+        "id":  "Q13"
+    },
+    {
+        "choices":  [
+                        "Prefer predictable problems",
+                        "Some surprises ok",
+                        "Frequent surprises ok",
+                        "I enjoy unexpected challenges"
+                    ],
+        "prompt":  "How do you approach problem solving when issues appear unexpectedly?",
+        "id":  "Q14"
+    },
+    {
+        "choices":  [
+                        "Prefer subjective goals",
+                        "Some metrics ok",
+                        "Metrics are fine",
+                        "I like clear metrics and targets"
+                    ],
+        "prompt":  "How do you handle accountability for measurable outcomes (speed/quality/throughput)?",
+        "id":  "Q15"
+    },
+    {
+        "choices":  [
+                        "Prefer to be sure first",
+                        "Sometimes communicate early",
+                        "Usually communicate early",
+                        "Always communicate early"
+                    ],
+        "prompt":  "How comfortable are you communicating issues early (even if unsure)?",
+        "id":  "Q16"
+    },
+    {
+        "choices":  [
+                        "Prefer slow change",
+                        "Moderate pace",
+                        "Fast learning ok",
+                        "I learn new systems very quickly"
+                    ],
+        "prompt":  "How do you feel about learning new procedures/tools quickly?",
+        "id":  "Q17"
+    },
+    {
+        "choices":  [
+                        "Prefer flexibility",
+                        "Some consistency ok",
+                        "Consistency is good",
+                        "I prefer strict consistency"
+                    ],
+        "prompt":  "How do you handle strict process consistency across shifts/teams?",
+        "id":  "Q18"
+    },
+    {
+        "choices":  [
+                        "Avoid conflict",
+                        "Handle mild conflict",
+                        "Comfortable addressing issues",
+                        "Very comfortable setting boundaries"
+                    ],
+        "prompt":  "How comfortable are you with conflict resolution or firm boundary setting?",
+        "id":  "Q19"
+    },
+    {
+        "choices":  [
+                        "Accuracy first",
+                        "Mostly accurate",
+                        "Balanced",
+                        "Speed with acceptable accuracy"
+                    ],
+        "prompt":  "How do you prefer balancing speed vs accuracy?",
+        "id":  "Q20"
+    }
+]

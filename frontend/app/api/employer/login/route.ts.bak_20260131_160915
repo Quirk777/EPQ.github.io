@@ -1,0 +1,11 @@
+import { NextRequest } from "next/server";
+import { proxyJson } from "../../_proxy";
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+  return proxyJson(req, "/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+  });
+}

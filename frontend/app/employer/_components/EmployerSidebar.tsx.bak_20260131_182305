@@ -1,0 +1,211 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+type Role = { role_id: string; name: string; status: string; created_at?: string };
+
+export default function EmployerSidebar() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const path = usePathname();
+  const router = useRouter();
+
+  async function load(): Promise<Role[]> {
+    const r = await fetch("/api/employer/roles", { cache: "no-store" });
+    if (!r.ok) {
+      const t = await safeText(r);
+      throw new Error(`roles fetch ${r.status}: ${t || r.statusText}`);
+    }
+    const j = await r.json();
+    const list: Role[] = Array.isArray(j) ? j : [];
+    setRoles(list);
+    return list;
+  }
+
+  useEffect(() => {
+    (async () => {
+      try { setErr(null); await load(); }
+      catch (e:any) { setErr(e?.message || "Failed to load roles"); setRoles([]); }
+    })();
+  }, []);
+
+  const isActive = (href: string) => path === href || (path?.startsWith(href + "/") ?? false);
+
+  async function addRole() {
+    const n = name.trim();
+    if (!n) return;
+
+    setBusy(true);
+    setErr(null);
+
+    // optimistic add so it appears instantly
+    const tempId = "R-temp-" + Math.random().toString(16).slice(2);
+    const optimistic: Role = { role_id: tempId, name: n, status: "active" };
+    setRoles((prev) => [optimistic, ...prev]);
+
+    try {
+      const r = await fetch("/api/employer/roles", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: n }),
+      });
+
+      const j = await r.json().catch(() => ({}));
+
+      if (!r.ok) {
+        setRoles((prev) => prev.filter(x => x.role_id !== tempId));
+        throw new Error(j?.detail || `create role failed ${r.status}`);
+      }
+
+      // Some backends return the created role; some just return {ok:true}.
+      // Handle BOTH reliably:
+      let roleId: string | null = j?.role_id || null;
+
+      // Replace optimistic with real if we got it
+      if (roleId) {
+        setRoles((prev) => {
+          const withoutTemp = prev.filter(x => x.role_id !== tempId);
+          const real: Role = { role_id: roleId!, name: j?.name || n, status: j?.status || "active" };
+          return [real, ...withoutTemp];
+        });
+        setName("");
+        router.push(`/employer/roles/${roleId}/setup`);
+        return;
+      }
+
+      // Fallback: reload list and pick the best match (newest name match)
+      const list = await load();
+      const match = list.find(x => x.name.toLowerCase() === n.toLowerCase()) || list[0];
+      setName("");
+
+      if (!match?.role_id) throw new Error("Role created, but could not resolve role_id.");
+      router.push(`/employer/roles/${match.role_id}/setup`);
+    } catch (e:any) {
+      setErr(e?.message || "Failed to create role");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const sorted = useMemo(() => roles.slice(), [roles]);
+
+  return (
+    <aside style={{
+      width: 290,
+      borderRight: "1px solid #e5e7eb",
+      background: "#fff",
+      padding: 14,
+      position: "sticky",
+      top: 0,
+      height: "100vh",
+      overflow: "auto"
+    }}>
+      <div style={{ fontWeight: 950, fontSize: 16, marginBottom: 10 }}>EPQ Employer</div>
+
+      <Nav href="/employer/dashboard" active={isActive("/employer/dashboard")}>Master Dashboard</Nav>
+
+      <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 900 }}>ROLES</div>
+        <button
+          onClick={async () => { try { setErr(null); await load(); } catch(e:any){ setErr(e?.message || "Failed to refresh"); } }}
+          style={{
+            fontSize: 12, fontWeight: 900,
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            borderRadius: 999,
+            padding: "6px 10px",
+            cursor: "pointer"
+          }}
+          title="Refresh roles"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {err ? (
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 12, border: "1px solid #fee2e2", background: "#fff1f2", color: "#991b1b", fontSize: 12 }}>
+          {err}
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+        {sorted.map(r => (
+          <Nav key={r.role_id} href={`/employer/roles/${r.role_id}`} active={isActive(`/employer/roles/${r.role_id}`)}>
+            {r.name}{r.status !== "active" ? <span style={{ marginLeft: 8, fontSize: 11, opacity: 0.65 }}>(paused)</span> : null}
+          </Nav>
+        ))}
+        {sorted.length === 0 ? (
+          <div style={{ fontSize: 13, opacity: 0.75, padding: "8px 10px" }}>
+            No roles yet. Add one below.
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #eef2f7" }}>
+        <div style={{ fontWeight: 900, marginBottom: 8 }}>Add Role</div>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Dock Worker"
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid #e5e7eb",
+            outline: "none"
+          }}
+        />
+        <button
+          onClick={addRole}
+          disabled={busy || !name.trim()}
+          style={{
+            width: "100%",
+            marginTop: 10,
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid #111827",
+            background: "#111827",
+            color: "#fff",
+            fontWeight: 950,
+            cursor: "pointer",
+            opacity: busy || !name.trim() ? 0.65 : 1
+          }}
+        >
+          {busy ? "Creating…" : "Add Role"}
+        </button>
+
+        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65, lineHeight: 1.5 }}>
+          New roles must be configured before you can share an applicant link.
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Nav({ href, active, children }: { href: string; active: boolean; children: any }) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "block",
+        padding: "10px 10px",
+        borderRadius: 12,
+        textDecoration: "none",
+        border: "1px solid " + (active ? "#111827" : "#e5e7eb"),
+        background: active ? "#111827" : "#fff",
+        color: active ? "#fff" : "inherit",
+        fontWeight: 900
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+async function safeText(r: Response) {
+  try { return await r.text(); } catch { return ""; }
+}

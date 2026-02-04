@@ -1,0 +1,193 @@
+﻿from app.routes import email
+# app/main.py
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from pathlib import Path
+import os
+from app.routes.debug import router as debug_router
+import logging
+
+import epq_core
+from report_generator import generate_pdf_report
+from app.services import db
+
+from app.auth import router as auth_router
+from app.routes.employer import router as employer_router
+from app.routes.applicant import router as applicant_router
+from app.routes.reports import router as reports_router
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("epq")
+
+app = FastAPI(title="EPQ Assessment Server (persistent)")
+
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-only-change-me")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=False,  # True in production with HTTPS
+)
+
+# CORS is fine to keep for dev tools; frontend will use a proxy anyway (see Next steps)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Routers
+app.include_router(debug_router)
+app.include_router(auth_router)
+app.include_router(employer_router)
+app.include_router(applicant_router)
+app.include_router(reports_router)
+
+# Paths
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+INDEX_PATH = FRONTEND_DIR / "index.html"
+
+# Optional: mount static frontend folder (not the Next dev server)
+if FRONTEND_DIR.exists():
+    app.mount("/frontend", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
+
+
+@app.on_event("startup")
+def startup():
+    db.init_db()
+    logger.info("DB initialized")
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return "<h1>EPQ API running</h1><p>Go to <a href='/docs'>/docs</a></p>"
+
+
+# -------------------------
+# Background PDF worker
+# -------------------------
+from pathlib import Path
+import time
+
+# def _generate_pdf_background(assessment_id: str, applicant_result: dict, employer_env: str, candidate_id: str):
+#     try:
+#         logger.info("Starting PDF generation for assessment %s", assessment_id)
+
+#         reports_dir = Path(REPORTS_DIR).resolve()
+#         reports_dir.mkdir(parents=True, exist_ok=True)
+
+#         pdf_path = generate_pdf_report(
+#             applicant_result=applicant_result,
+#             employer_environment=employer_env,
+#             candidate_id=candidate_id,
+#             output_dir=str(reports_dir),
+#         )
+
+#         if not pdf_path:
+#             logger.error("PDF generation returned None for %s", assessment_id)
+#             return
+
+#         pdf_file = Path(pdf_path)
+
+#         # If generator returns a relative path, anchor it to reports_dir
+#         if not pdf_file.is_absolute():
+#             pdf_file = (reports_dir / pdf_file).resolve()
+#         else:
+#             pdf_file = pdf_file.resolve()
+
+#         logger.info("PDF generator returned path: %s", pdf_file)
+
+#         # Windows can occasionally lag a beat after writing; retry a few times
+#         for _ in range(5):
+#             if pdf_file.exists() and pdf_file.is_file() and pdf_file.stat().st_size > 0:
+#                 break
+#             time.sleep(0.25)
+
+#         if not (pdf_file.exists() and pdf_file.is_file()):
+#             logger.error("PDF file missing after generation for %s. Expected: %s", assessment_id, pdf_file)
+#             return
+
+#         if pdf_file.stat().st_size == 0:
+#             logger.error("PDF file is zero bytes for %s. Path: %s", assessment_id, pdf_file)
+#             return
+
+#         filename = pdf_file.name
+
+#         # Optional: ensure the file is actually inside REPORTS_DIR
+#         try:
+#             pdf_file.relative_to(reports_dir)
+#         except ValueError:
+#             logger.error("PDF was generated outside REPORTS_DIR. pdf=%s reports_dir=%s", pdf_file, reports_dir)
+#             return
+
+#         db.set_assessment_pdf(assessment_id, filename)
+#         logger.info("PDF saved and DB updated for %s -> %s", assessment_id, filename)
+
+#     except Exception as exc:
+#         logger.exception("PDF generation failed for %s: %s", assessment_id, exc)
+
+# # -------------------------
+# # Applicant endpoints
+# # -------------------------
+# @app.get("/applicant/{assessment_id}/questions")
+# def get_applicant_questions(assessment_id: str):
+#     a = db.get_assessment(assessment_id)
+#     if not a:
+#         raise HTTPException(status_code=404, detail="Assessment not found")
+
+#     max_q = a.get("max_questions", 32)
+#     questions = epq_core.generate_questions(max_q)
+#     return {"assessment_id": assessment_id, "max_questions": max_q, "questions": questions}
+
+
+# @app.post("/applicant/{assessment_id}/submit")
+# async def submit_applicant(assessment_id: str, request: Request, background_tasks: BackgroundTasks):
+#     a = db.get_assessment(assessment_id)
+#     if not a:
+#         raise HTTPException(status_code=404, detail="Assessment not found")
+
+#     body = await request.json()
+#     responses = body.get("responses", {}) or {}
+
+#     # audit trail
+#     try:
+#         db.store_applicant_responses(assessment_id, responses)
+#     except Exception:
+#         logger.exception("Failed to store applicant responses for %s", assessment_id)
+
+#     applicant_result = epq_core.run_applicant_from_responses(responses)
+#     candidate_id = f"A-{assessment_id[:8]}"
+
+#     background_tasks.add_task(
+#         _generate_pdf_background,
+#         assessment_id,
+#         applicant_result,
+#         a.get("environment", "moderate"),
+#         candidate_id,
+#     )
+
+#     return {"status": "processing", "candidate_id": candidate_id}
+
+
+# Email routes
+app.include_router(email.router)
+

@@ -1,0 +1,232 @@
+﻿# app/main.py
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from app.routes.employer import router as employer_router
+from app.routes.applicant import router as applicant_router
+from pathlib import Path
+import logging
+
+import epq_core
+from report_generator import generate_pdf_report
+from app.services import db  # must implement init_db, create_employer, etc.
+
+print("DB MODULE LOADED FROM:", db.__file__)
+print("DB ATTRIBUTES:", dir(db))
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("epq")
+
+app = FastAPI(title="EPQ Assessment Server (persistent)")
+
+app.include_router(employer_router)
+app.include_router(applicant_router)
+
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Mount frontend static files
+if FRONTEND_DIR.exists():
+    app.mount("/frontend", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
+else:
+    logger.warning("Frontend dir missing; static not mounted")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+INDEX_PATH = FRONTEND_DIR / "index.html"
+
+
+@app.on_event("startup")
+def startup():
+    try:
+        db.init_db()
+        logger.info("DB initialized")
+    except Exception as e:
+        logger.exception("DB init failed: %s", e)
+
+
+@app.get("/", response_class=HTMLResponse)
+def root():
+    # Serve your frontend index if present
+    if INDEX_PATH.exists():
+        return INDEX_PATH.read_text(encoding="utf-8")
+    return {"status": "EPQ server running"}
+
+
+# -------------------------
+# Employer (minimal CRUD)
+# -------------------------
+@app.post("/employer")
+async def create_employer(req: Request):
+    body = await req.json()
+    company_name = body.get("company_name", "unnamed")
+    email = body.get("email", "")
+    employer_id = db.create_employer(company_name, email)
+    return {"employer_id": employer_id, "company_name": company_name, "email": email, "subscription_status": "inactive"}
+
+
+@app.get("/employer/{employer_id}/assessments")
+def employer_assessments(employer_id: str):
+    emp = db.get_employer(employer_id)
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employer not found")
+    items = db.list_assessments_for_employer(employer_id)
+    return {"employer": emp, "assessments": items}
+
+
+# -------------------------
+# Create assessment tied to an employer
+# -------------------------
+@app.post("/employer/{employer_id}/assessments")
+async def create_assessment_for_employer(employer_id: str, request: Request):
+    emp = db.get_employer(employer_id)
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employer not found")
+
+    body = await request.json()
+    answers = body.get("answers", {}) or {}
+
+    env, max_q = epq_core.environment_and_max_questions_from_employer_answers(answers) if answers else ("moderate", 32)
+    assessment_id = db.create_assessment(employer_id, env, max_q)
+
+    return {
+        "assessment_id": assessment_id,
+        "applicant_url": f"/applicant/{assessment_id}/questions",
+        "max_questions": max_q,
+        "environment": env,
+    }
+
+
+# -------------------------
+# Background PDF worker
+# -------------------------
+def _generate_pdf_background(assessment_id: str, applicant_result: dict, employer_env: str, candidate_id: str):
+    try:
+        logger.info("Starting PDF generation for assessment %s", assessment_id)
+
+        pdf_path = generate_pdf_report(
+            applicant_result=applicant_result,
+            employer_environment=employer_env,
+            candidate_id=candidate_id,
+            output_dir=str(REPORTS_DIR),
+        )
+
+        if not pdf_path:
+            logger.error("PDF generation returned None for %s", assessment_id)
+            return
+
+        filename = Path(pdf_path).name
+        db.set_assessment_pdf(assessment_id, filename)
+        logger.info("PDF saved and DB updated for %s -> %s", assessment_id, filename)
+
+    except Exception as exc:
+        logger.exception("PDF generation failed for %s: %s", assessment_id, exc)
+
+
+# -------------------------
+# Applicant endpoints
+# -------------------------
+@app.get("/applicant/{assessment_id}/questions")
+def get_applicant_questions(assessment_id: str):
+    a = db.get_assessment(assessment_id)
+    if not a:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    max_q = a.get("max_questions", 32)
+    questions = epq_core.generate_questions(max_q)
+    return {"assessment_id": assessment_id, "max_questions": max_q, "questions": questions}
+
+
+@app.post("/applicant/{assessment_id}/submit")
+async def submit_applicant(assessment_id: str, request: Request, background_tasks: BackgroundTasks):
+    a = db.get_assessment(assessment_id)
+    if not a:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    body = await request.json()
+    responses = body.get("responses", {}) or {}
+
+    # audit trail
+    try:
+        db.store_applicant_responses(assessment_id, responses)
+    except Exception:
+        logger.exception("Failed to store applicant responses for %s", assessment_id)
+
+    applicant_result = epq_core.run_applicant_from_responses(responses)
+    candidate_id = f"A-{assessment_id[:8]}"
+
+    background_tasks.add_task(
+        _generate_pdf_background,
+        assessment_id,
+        applicant_result,
+        a.get("environment", "moderate"),
+        candidate_id,
+    )
+
+    return {
+        "status": "processing",
+        "message": "PDF generation started",
+        "candidate_id": candidate_id,
+        "poll_url": f"/employer/{a.get('employer_id')}/assessments" if a.get("employer_id") else None,
+    }
+
+
+# -------------------------
+# Reports
+# -------------------------
+@app.get("/reports/{pdf_filename}")
+def get_pdf(pdf_filename: str):
+    pdf_file = REPORTS_DIR / pdf_filename
+    if not pdf_file.exists():
+        raise HTTPException(status_code=404, detail="PDF not found")
+    return FileResponse(pdf_file, media_type="application/pdf", filename=pdf_filename)
+
+
+# -------------------------
+# Stripe webhook simulation
+# -------------------------
+@app.post("/webhooks/stripe")
+async def stripe_webhook(req: Request):
+    body = await req.json()
+    event_type = body.get("type")
+
+    if event_type == "checkout.session.completed":
+        metadata = body.get("data", {}).get("object", {}).get("metadata", {})
+        emp_id = metadata.get("employer_id")
+        if emp_id:
+            db.set_employer_active(emp_id)
+            return {"status": "activated", "employer_id": emp_id}
+
+    return {"status": "ignored", "type": event_type}
+
+
+# -------------------------
+# Simple employer dashboard HTML
+# -------------------------
+@app.get("/employer/{employer_id}/dashboard", response_class=HTMLResponse)
+def employer_dashboard(employer_id: str):
+    emp = db.get_employer(employer_id)
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employer not found")
+
+    assessments = db.list_assessments_for_employer(employer_id)
+
+    html = f"<h1>Dashboard: {emp['company_name']}</h1><p>subscription: {emp['subscription_status']}</p><ul>"
+    for a in assessments:
+        link = f"/applicant/{a['assessment_id']}/questions"
+        pdf = a.get("pdf_filename") or "pending"
+        html += f"<li>Assessment {a['assessment_id']} - env={a['environment']} - status={a['status']} - pdf={pdf} - <a href='{link}'>applicant link</a>"
+        if pdf != "pending":
+            html += f" - <a href='/reports/{pdf}'>download pdf</a>"
+        html += "</li>"
+    html += "</ul>"
+    return html

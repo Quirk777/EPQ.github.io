@@ -1,0 +1,323 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+
+import { useRouter } from "next/navigation";
+import { useRequireEmployerLogin } from "../../_lib/requireLogin";
+
+function hasDone() {
+  try { return localStorage.getItem("employer_onboarding_done") === "1"; } catch { return false; }
+}
+
+export default function GuardedDashboardWrapper() {
+  useRequireEmployerLogin();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!hasDone()) router.replace("/employer/onboarding");
+  }, [router]);
+
+  if (!hasDone()) return null;
+
+  return (
+    <DashboardInner />
+  );
+}
+type AnyObj = Record<string, any>;
+
+function pick(obj: AnyObj, keys: string[], fallback: any = "") {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+  }
+  return fallback;
+}
+
+function DashboardInner() {
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<AnyObj[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  function parseSubmitted(row: AnyObj): Date | null {
+    const raw = pick(row, ["submitted_utc", "submittedUtc", "submitted_at"], "");
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function startOfToday() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function startOfWeek() {
+    const d = startOfToday();
+    const day = d.getDay(); // Sun=0..Sat=6
+    d.setDate(d.getDate() - day);
+    return d;
+  }
+
+  const grouped = useMemo(() => {
+    const todayStart = startOfToday();
+    const weekStart = startOfWeek();
+
+    const today: AnyObj[] = [];
+    const thisWeek: AnyObj[] = [];
+    const older: AnyObj[] = [];
+
+    for (const row of items) {
+      const dt = parseSubmitted(row);
+      if (!dt) {
+        older.push(row);
+        continue;
+      }
+      if (dt >= todayStart) today.push(row);
+      else if (dt >= weekStart) thisWeek.push(row);
+      else older.push(row);
+    }
+
+    const sortDesc = (a: AnyObj, b: AnyObj) =>
+      (parseSubmitted(b)?.getTime() ?? 0) - (parseSubmitted(a)?.getTime() ?? 0);
+
+    today.sort(sortDesc);
+    thisWeek.sort(sortDesc);
+    older.sort(sortDesc);
+
+    return { today, thisWeek, older };
+  }, [items]);
+
+  const assessmentId = useMemo(() => {
+    if (typeof window !== "undefined") {
+      const v = window.localStorage.getItem("latest_assessment_id");
+      if (v && v.trim()) return v;
+    }
+    const first = items?.[0] ?? {};
+    return pick(first, ["assessment_id", "assessmentId", "aid"], "");
+  }, [items]);
+
+  const shareLink = useMemo(() => {
+    if (!assessmentId) return "";
+    return `${typeof window !== "undefined" ? window.location.origin : ""}/applicant/${assessmentId}`;
+  }, [assessmentId]);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/employer/submissions", { credentials: "include" });
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+      setItems(arr);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load submissions");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied link âœ…");
+    } catch {
+      alert("Could not copy (browser blocked it).");
+    }
+  }
+
+  function renderTable(rows: AnyObj[]) {
+    return (
+      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#fafafa" }}>
+                <th style={th}>Candidate</th>
+                <th style={th}>Email</th>
+                <th style={th}>Candidate ID</th>
+                <th style={th}>Submitted</th>
+                <th style={th}>Status</th>
+                <th style={th}>PDF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td style={td} colSpan={6}>
+                    No submissions.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, i) => {
+                  const name = pick(row, ["applicant_name", "name", "full_name", "fullName"], `Applicant ${i + 1}`);
+                  const email = pick(row, ["applicant_email", "email"], "");
+                  const cid = pick(row, ["candidate_id", "candidateId", "cid"], "");
+
+                  const submittedRaw = pick(row, ["submitted_utc", "submittedUtc", "submitted_at"], "");
+                  const submitted = submittedRaw ? new Date(submittedRaw).toLocaleString() : "â€”";
+
+                  const pdfStatus = String(pick(row, ["pdf_status", "pdfStatus"], "pending"));
+                  const pdfError = pick(row, ["pdf_error", "pdfError"], "");
+
+                  const status =
+                    pdfStatus === "success" ? "Ready" :
+                    pdfStatus === "failed" ? "Failed" :
+                    "Processing";
+
+                  const pdfHref = cid ? `/api/employer/pdf/${encodeURIComponent(cid)}` : "";
+
+                  return (
+                    <tr key={cid || i} style={{ borderTop: "1px solid #eee" }}>
+                      <td style={td}>{name}</td>
+                      <td style={td}>{email || "â€”"}</td>
+                      <td style={td}><code>{cid || "â€”"}</code></td>
+                      <td style={td}>{submitted}</td>
+                      <td style={td}>
+                        <span style={{
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          border: "1px solid #ddd",
+                          background:
+                            status === "Ready" ? "#f2fff6" :
+                            status === "Processing" ? "#fffaf2" :
+                            "#fff0f0"
+                        }}>
+                          {status}
+                        </span>
+
+                        {status === "Failed" && pdfError ? (
+                          <div style={{ color: "crimson", fontSize: 12, marginTop: 6, whiteSpace: "pre-wrap" }}>
+                            {String(pdfError)}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td style={td}>
+                        {cid ? (
+                          status === "Ready" ? (
+                            <a
+                              href={pdfHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: "inline-block",
+                                padding: "8px 12px",
+                                borderRadius: 10,
+                                border: "1px solid #333",
+                                background: "#111",
+                                color: "#fff",
+                                textDecoration: "none",
+                              }}
+                            >
+                              View PDF
+                            </a>
+                          ) : (
+                            <span style={{ color: "#666", fontSize: 13 }}>
+                              {status === "Failed" ? "Fix error then retry" : "Generatingâ€¦"}
+                            </span>
+                          )
+                        ) : (
+                          <span style={{ color: "#999" }}>â€”</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 750 }}>Employer Dashboard</h1>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <Link href="/employer/epq" style={{ color: "#111", textDecoration: "underline" }}>
+            Create new assessment
+          </Link>
+        </div>
+      </div>
+
+      <p style={{ marginTop: 6, color: "#555" }}>
+        Review submissions, status, and download PDFs.
+      </p>
+
+      <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
+        <div style={{ fontWeight: 650, marginBottom: 8 }}>Assessment link</div>
+        {assessmentId ? (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <code style={{ padding: "6px 8px", border: "1px solid #eee", borderRadius: 8, background: "#fafafa" }}>
+              {shareLink || `(buildingâ€¦) /applicant/${assessmentId}`}
+            </code>
+            <button
+              onClick={() => copy(shareLink || `/applicant/${assessmentId}`)}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #333", background: "#111", color: "#fff" }}
+            >
+              Copy
+            </button>
+            <span style={{ color: "#666", fontSize: 13 }}>
+              This is the link you send to applicants.
+            </span>
+          </div>
+        ) : (
+          <div style={{ color: "#666", fontSize: 13 }}>
+            No assessment id found yet. Create one first in â€œCreate new assessmentâ€.
+          </div>
+        )}
+      </div>
+
+      {loading && <p style={{ marginTop: 16 }}>Loadingâ€¦</p>}
+
+      {!loading && error && (
+        <div style={{ marginTop: 16, padding: 12, border: "1px solid #f99", background: "#fff5f5" }}>
+          <b>Error:</b> {error}
+          <div style={{ marginTop: 8 }}>
+            <button onClick={load} style={{ padding: "8px 12px" }}>Retry</button>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 650 }}>Submissions</div>
+            <button onClick={load} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #333", background: "#fff" }}>
+              Refresh
+            </button>
+          </div>
+
+          <h2 style={{ marginTop: 18 }}>Today ({grouped.today.length})</h2>
+          {renderTable(grouped.today)}
+
+          <h2 style={{ marginTop: 18 }}>This week ({grouped.thisWeek.length})</h2>
+          {renderTable(grouped.thisWeek)}
+
+          <h2 style={{ marginTop: 18 }}>Older ({grouped.older.length})</h2>
+          {renderTable(grouped.older)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const th: React.CSSProperties = {
+  textAlign: "left",
+  padding: "12px 12px",
+  fontSize: 13,
+  color: "#555",
+  borderBottom: "1px solid #eee",
+};
+
+const td: React.CSSProperties = { padding: "12px 12px", verticalAlign: "top" };
+
+

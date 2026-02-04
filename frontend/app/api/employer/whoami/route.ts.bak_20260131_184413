@@ -1,0 +1,17 @@
+import { NextRequest, NextResponse } from "next/server";
+import { proxyJson } from "../../_proxy";
+
+export async function GET(req: NextRequest) {
+  // "Are we logged in?" check using an endpoint that requires auth.
+  const res = await proxyJson(req, "/employer/submissions", { method: "GET" });
+
+  if (res.status === 200) {
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
+  if (res.status === 401) {
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
+  // Pass through anything else (helps debugging)
+  const text = await res.text();
+  return new NextResponse(text, { status: res.status });
+}

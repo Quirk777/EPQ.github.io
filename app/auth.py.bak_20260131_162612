@@ -1,0 +1,83 @@
+﻿# app/auth.py
+from json import JSONDecodeError
+from fastapi import APIRouter, HTTPException, Request
+from passlib.context import CryptContext
+
+from app.services import db
+from app.services import auth_db
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+def require_employer(request: Request):
+    emp_id = request.session.get("employer_id")
+    if not emp_id:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    emp = db.get_employer(emp_id)
+    if not emp:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Session invalid")
+    return emp
+
+async def _safe_json(req: Request) -> dict:
+    ct = (req.headers.get("content-type") or "").lower()
+    if ct and "application/json" not in ct:
+        raise HTTPException(status_code=400, detail="Content-Type must be application/json")
+
+    try:
+        body = await req.json()
+    except JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not parse JSON body")
+
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="JSON body must be an object")
+
+    return body
+
+@router.post("/register")
+async def register(req: Request):
+    body = await _safe_json(req)
+
+    company_name = (body.get("company_name") or "").strip() or "unnamed"
+    email = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="email and password required")
+
+    existing = auth_db.get_employer_by_email(email)
+    if existing:
+        raise HTTPException(status_code=409, detail="Email already registered")
+
+    employer_id = db.create_employer(company_name, email)
+    auth_db.set_employer_password(employer_id, pwd_context.hash(password))
+
+    req.session["employer_id"] = employer_id
+    return {"status": "ok", "employer_id": employer_id}
+
+@router.post("/login")
+async def login(req: Request):
+    body = await _safe_json(req)
+
+    email = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="email and password required")
+
+    emp = auth_db.get_employer_by_email(email)
+    if not emp or not emp.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not pwd_context.verify(password, emp["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    req.session["employer_id"] = emp["employer_id"]
+    return {"status": "ok", "employer_id": emp["employer_id"]}
+
+@router.post("/logout")
+async def logout(req: Request):
+    req.session.clear()
+    return {"status": "ok"}

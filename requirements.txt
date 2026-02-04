@@ -1,0 +1,10 @@
+﻿fastapi
+uvicorn
+matplotlib
+pdfkit
+questionary
+httpx
+passlib
+slowapi
+python-dotenv
+psycopg2-binary

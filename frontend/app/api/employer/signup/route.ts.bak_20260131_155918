@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const BACKEND = process.env.BACKEND_URL || "http://127.0.0.1:8001";
+
+async function attempt(req: NextRequest, path: string, body: string) {
+  const upstream = await fetch(`${BACKEND}${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "accept": "application/json",
+      ...(req.headers.get("cookie") ? { "cookie": req.headers.get("cookie") as string } : {}),
+    },
+    body,
+    redirect: "manual",
+  });
+
+  const text = await upstream.text();
+  const res = new NextResponse(text, { status: upstream.status });
+
+  const setCookie = upstream.headers.get("set-cookie");
+  if (setCookie) res.headers.append("set-cookie", setCookie);
+
+  const ct = upstream.headers.get("content-type");
+  if (ct) res.headers.set("content-type", ct);
+
+  return res;
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+
+  // Try common signup endpoints. If your backend has one of these, it will work.
+  const paths = [
+    "/employer/signup",
+    "/employer/register",
+    "/employer/create",
+    "/auth/signup",
+    "/auth/register",
+  ];
+
+  for (const p of paths) {
+    const res = await attempt(req, p, body);
+    if (res.status !== 404) return res;
+  }
+
+  return NextResponse.json(
+    { detail: "Signup endpoint not found on backend. Tried: " + paths.join(", ") },
+    { status: 404 }
+  );
+}

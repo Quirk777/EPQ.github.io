@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const BACKEND = process.env.BACKEND_URL || "http://127.0.0.1:8001";
+
+function copyUpstreamHeaders(upstream: Response, res: NextResponse) {
+  const passthrough = [
+    "content-type",
+    "content-disposition",
+    "cache-control",
+    "pragma",
+    "expires",
+  ];
+  for (const h of passthrough) {
+    const v = upstream.headers.get(h);
+    if (v) res.headers.set(h, v);
+  }
+  // Preserve backend session cookies
+  const setCookie = upstream.headers.get("set-cookie");
+  if (setCookie) res.headers.append("set-cookie", setCookie);
+}
+
+export async function proxyJson(req: NextRequest, path: string, init?: RequestInit) {
+  const url = `${BACKEND}${path}`;
+
+  const headers: Record<string, string> = {
+    "accept": req.headers.get("accept") || "application/json",
+  };
+
+  const cookie = req.headers.get("cookie");
+  if (cookie) headers["cookie"] = cookie;
+
+  if (init?.headers) {
+    for (const [k, v] of Object.entries(init.headers as any)) {
+      if (typeof v === "string") headers[k] = v;
+    }
+  }
+
+  const upstream = await fetch(url, { ...init, headers, redirect: "manual" });
+  const text = await upstream.text();
+
+  const res = new NextResponse(text, { status: upstream.status });
+  copyUpstreamHeaders(upstream, res);
+  return res;
+}
+
+export async function proxyRaw(req: NextRequest, path: string, init?: RequestInit) {
+  const url = `${BACKEND}${path}`;
+
+  const headers: Record<string, string> = {};
+  const cookie = req.headers.get("cookie");
+  if (cookie) headers["cookie"] = cookie;
+
+  if (init?.headers) {
+    for (const [k, v] of Object.entries(init.headers as any)) {
+      if (typeof v === "string") headers[k] = v;
+    }
+  }
+
+  const upstream = await fetch(url, { ...init, headers, redirect: "manual" });
+  const buf = await upstream.arrayBuffer();
+
+  const res = new NextResponse(buf, { status: upstream.status });
+  copyUpstreamHeaders(upstream, res);
+  return res;
+}

@@ -1,0 +1,126 @@
+﻿"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+type Props = {
+  email?: string;
+  companyName?: string;
+};
+
+export default function ProfileMenu({ email, companyName }: Props) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  async function logout() {
+    try {
+      // If you already have /api/auth/logout, this will work.
+      // If your logout path differs, change it here.
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    router.replace("/employer/login");
+  }
+
+  const initials = (companyName || email || "EPQ").slice(0, 2).toUpperCase();
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        aria-label="Open profile menu"
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 999,
+          border: "1px solid #e5e7eb",
+          background: "#fff",
+          display: "grid",
+          placeItems: "center",
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        {initials}
+      </button>
+
+      {open ? (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            marginTop: 10,
+            width: 280,
+            borderRadius: 14,
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            boxShadow: "0 18px 48px rgba(0,0,0,0.08)",
+            overflow: "hidden",
+            zIndex: 50,
+          }}
+        >
+          <div style={{ padding: 14, borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ fontSize: 13, opacity: 0.7 }}>Signed in as</div>
+            <div style={{ fontWeight: 700, marginTop: 2 }}>
+              {companyName || "Employer"}
+            </div>
+            <div style={{ fontSize: 13, opacity: 0.7, marginTop: 2 }}>
+              {email || ""}
+            </div>
+          </div>
+
+          <div style={{ padding: 8 }}>
+            <MenuLink href="/employer/profile" label="Profile & Settings" />
+            <MenuLink href="/employer/profile#subscription" label="Subscription" />
+            <MenuLink href="/employer/profile#insights" label="Applicant Insights" />
+          </div>
+
+          <div style={{ padding: 8, borderTop: "1px solid #f1f5f9" }}>
+            <button
+              onClick={logout}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "10px 10px",
+                borderRadius: 10,
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Log out
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "block",
+        padding: "10px 10px",
+        borderRadius: 10,
+        textDecoration: "none",
+        border: "1px solid transparent",
+      }}
+    >
+      {label}
+    </Link>
+  );
+}

@@ -1,0 +1,207 @@
+/* Surface Texture System - Extremely Subtle Material Depth */
+
+/* 
+TEXTURE STRATEGY:
+- Background surfaces: micro-gradient with noise pattern
+- Elevated panels: subtle tonal shift with light diffusion
+- Cards/modals: layered texture with edge enhancement
+- Interactive elements: dynamic texture on state change
+*/
+
+/* Base Texture Variables */
+:root {
+  /* Micro-gradient noise patterns */
+  --texture-bg-noise: radial-gradient(circle at 30% 20%, rgba(180, 199, 231, 0.005) 0%, transparent 50%),
+                      radial-gradient(circle at 70% 80%, rgba(196, 231, 212, 0.003) 0%, transparent 40%),
+                      linear-gradient(135deg, rgba(212, 208, 231, 0.002) 0%, rgba(180, 199, 231, 0.002) 100%);
+
+  --texture-surface-noise: radial-gradient(circle at 60% 40%, rgba(180, 199, 231, 0.008) 0%, transparent 45%),
+                           radial-gradient(circle at 20% 70%, rgba(231, 215, 196, 0.004) 0%, transparent 35%),
+                           linear-gradient(45deg, rgba(212, 208, 231, 0.003) 0%, rgba(196, 231, 212, 0.003) 100%);
+
+  --texture-elevated-noise: radial-gradient(circle at 80% 30%, rgba(180, 199, 231, 0.012) 0%, transparent 40%),
+                           radial-gradient(circle at 40% 90%, rgba(212, 208, 231, 0.006) 0%, transparent 30%),
+                           linear-gradient(315deg, rgba(196, 231, 212, 0.004) 0%, rgba(231, 215, 196, 0.004) 100%);
+
+  /* Micro-texture overlays - nearly imperceptible */
+  --texture-grain: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 0.8px,
+    rgba(180, 199, 231, 0.008) 0.8px,
+    rgba(180, 199, 231, 0.008) 1.6px
+  );
+
+  --texture-weave: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 1.2px,
+    rgba(196, 231, 212, 0.006) 1.2px,
+    rgba(196, 231, 212, 0.006) 2.4px
+  ),
+  repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1.2px,
+    rgba(212, 208, 231, 0.004) 1.2px,
+    rgba(212, 208, 231, 0.004) 2.4px
+  );
+
+  /* Light diffusion patterns */
+  --texture-diffusion: radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.008) 0%, transparent 50%),
+                       radial-gradient(ellipse at bottom right, rgba(255, 255, 255, 0.005) 0%, transparent 60%);
+}
+
+/* Base Background Texture */
+.texture-background {
+  background: var(--surface-0), var(--texture-bg-noise);
+  background-blend-mode: normal;
+}
+
+/* Surface Level 1 - Main containers */
+.texture-surface-1 {
+  background: var(--surface-1), var(--texture-surface-noise), var(--texture-grain);
+  background-blend-mode: normal;
+}
+
+/* Surface Level 2 - Cards and panels */
+.texture-surface-2 {
+  background: var(--surface-2), var(--texture-elevated-noise), var(--texture-weave);
+  background-blend-mode: normal;
+  position: relative;
+}
+
+.texture-surface-2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--texture-diffusion);
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.3;
+  mix-blend-mode: overlay;
+}
+
+/* Surface Level 3 - Modals and elevated elements */
+.texture-surface-3 {
+  background: var(--surface-3), var(--texture-elevated-noise);
+  background-blend-mode: normal;
+  position: relative;
+}
+
+.texture-surface-3::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 80%);
+  pointer-events: none;
+  border-radius: inherit;
+  mix-blend-mode: soft-light;
+}
+
+/* Interactive texture states */
+.texture-interactive {
+  background: var(--surface-2), var(--texture-surface-noise);
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.texture-interactive:hover {
+  background: var(--surface-2), 
+              radial-gradient(circle at 50% 50%, rgba(180, 199, 231, 0.015) 0%, transparent 60%),
+              var(--texture-surface-noise);
+}
+
+.texture-interactive:active {
+  background: var(--surface-2),
+              radial-gradient(circle at 50% 50%, rgba(180, 199, 231, 0.025) 0%, transparent 40%),
+              var(--texture-surface-noise);
+}
+
+/* Specialized texture patterns */
+
+/* Glass-like texture for overlays */
+.texture-glass {
+  background: var(--surface-3),
+              radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.012) 0%, transparent 50%),
+              radial-gradient(circle at 80% 90%, rgba(255, 255, 255, 0.008) 0%, transparent 40%);
+  backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Metallic texture for buttons */
+.texture-metallic {
+  background: linear-gradient(135deg, 
+              var(--surface-3) 0%, 
+              rgba(180, 199, 231, 0.020) 25%,
+              var(--surface-3) 50%,
+              rgba(196, 231, 212, 0.015) 75%,
+              var(--surface-3) 100%);
+  background-size: 200% 200%;
+  animation: metallic-shift 8s ease-in-out infinite;
+}
+
+@keyframes metallic-shift {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+}
+
+/* Fabric-like texture for content areas */
+.texture-fabric {
+  background: var(--surface-1),
+              repeating-linear-gradient(45deg, 
+                rgba(212, 208, 231, 0.004) 0%, 
+                transparent 2px, 
+                rgba(196, 231, 212, 0.003) 4px, 
+                transparent 6px);
+  background-size: 8px 8px;
+}
+
+/* Ultra-subtle paper texture */
+.texture-paper {
+  background: var(--surface-2),
+              radial-gradient(circle at 25% 25%, rgba(231, 215, 196, 0.006) 0%, transparent 70%),
+              radial-gradient(circle at 75% 75%, rgba(180, 199, 231, 0.004) 0%, transparent 70%),
+              repeating-linear-gradient(0deg,
+                transparent,
+                transparent 3px,
+                rgba(212, 208, 231, 0.002) 3px,
+                rgba(212, 208, 231, 0.002) 6px);
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  .texture-metallic {
+    animation: none;
+  }
+}
+
+/* High DPI display adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  :root {
+    --texture-grain: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 0.4px,
+      rgba(180, 199, 231, 0.006) 0.4px,
+      rgba(180, 199, 231, 0.006) 0.8px
+    );
+  }
+}
+
+/* Mobile optimizations - reduce texture complexity */
+@media (max-width: 768px) {
+  .texture-surface-2::before,
+  .texture-surface-3::before {
+    display: none;
+  }
+  
+  .texture-weave {
+    display: none;
+  }
+}

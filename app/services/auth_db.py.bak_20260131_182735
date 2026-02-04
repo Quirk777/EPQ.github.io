@@ -1,0 +1,44 @@
+﻿# app/services/auth_db.py
+import sqlite3
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DB_PATH = PROJECT_ROOT / "epq.db"
+
+def _conn():
+    con = sqlite3.connect(str(DB_PATH))
+    con.row_factory = sqlite3.Row
+    return con
+
+def ensure_password_hash_column():
+    con = _conn()
+    cur = con.cursor()
+    try:
+        cur.execute("ALTER TABLE employers ADD COLUMN password_hash TEXT")
+        con.commit()
+    except Exception:
+        pass
+    finally:
+        con.close()
+
+def get_employer_by_email(email: str) -> Optional[Dict[str, Any]]:
+    ensure_password_hash_column()
+    con = _conn()
+    cur = con.cursor()
+    cur.execute(
+        "SELECT employer_id, company_name, email, subscription_status, password_hash "
+        "FROM employers WHERE lower(email)=lower(?)",
+        (email,)
+    )
+    row = cur.fetchone()
+    con.close()
+    return dict(row) if row else None
+
+def set_employer_password(employer_id: str, password_hash: str) -> None:
+    ensure_password_hash_column()
+    con = _conn()
+    cur = con.cursor()
+    cur.execute("UPDATE employers SET password_hash=? WHERE employer_id=?", (password_hash, employer_id))
+    con.commit()
+    con.close()

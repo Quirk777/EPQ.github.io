@@ -1,0 +1,1119 @@
+{
+  "timestamp": "2026-01-14T00:35:58.142503Z",
+  "responses": [
+    {
+      "id": 1,
+      "text": "Which would frustrate you more over time?",
+      "chosen_label": "A",
+      "chosen_text": "Clear expectations with little flexibility",
+      "chosen_scores": {
+        "SCL": 3,
+        "AJL": 1
+      },
+      "option_label_map": {
+        "A": "Clear expectations with little flexibility",
+        "B": "Flexible expectations with unclear boundaries"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 3,
+          "AJL": 1
+        },
+        "B": {
+          "SCL": 2,
+          "CVL": 3
+        }
+      },
+      "latency_seconds": 20.278,
+      "timestamp": "2026-01-14T00:35:51.910203Z"
+    },
+    {
+      "id": 2,
+      "text": "When starting a new task, you usually prefer to:",
+      "chosen_label": "A",
+      "chosen_text": "Understand the full process before beginning",
+      "chosen_scores": {
+        "SCL": 3,
+        "CCD": 1
+      },
+      "option_label_map": {
+        "A": "Understand the full process before beginning",
+        "B": "Start and adjust as you go"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 3,
+          "CCD": 1
+        },
+        "B": {
+          "SCL": 2,
+          "CCD": 3
+        }
+      },
+      "latency_seconds": 0.168,
+      "timestamp": "2026-01-14T00:35:52.078138Z"
+    },
+    {
+      "id": 3,
+      "text": "Which environment feels more comfortable?",
+      "chosen_label": "A",
+      "chosen_text": "Rules evolve based on situations",
+      "chosen_scores": {
+        "SCL": 2,
+        "CVL": 3
+      },
+      "option_label_map": {
+        "A": "Rules evolve based on situations",
+        "B": "Clear rules and procedures"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 2,
+          "CVL": 3
+        },
+        "B": {
+          "SCL": 3,
+          "MSD": 1
+        }
+      },
+      "latency_seconds": 0.151,
+      "timestamp": "2026-01-14T00:35:52.229789Z"
+    },
+    {
+      "id": 4,
+      "text": "You receive vague instructions for a task. What do you do first?",
+      "chosen_label": "A",
+      "chosen_text": "Ask clarifying questions",
+      "chosen_scores": {
+        "SCL": 3,
+        "AJL": 1
+      },
+      "option_label_map": {
+        "A": "Ask clarifying questions",
+        "B": "Make an initial decision and proceed"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 3,
+          "AJL": 1
+        },
+        "B": {
+          "SCL": 2,
+          "AJL": 3
+        }
+      },
+      "latency_seconds": 0.152,
+      "timestamp": "2026-01-14T00:35:52.381978Z"
+    },
+    {
+      "id": 5,
+      "text": "Which statement feels closer to you?",
+      "chosen_label": "A",
+      "chosen_text": "I like defining success as you work",
+      "chosen_scores": {
+        "SCL": 2,
+        "MSD": 3
+      },
+      "option_label_map": {
+        "A": "I like defining success as you work",
+        "B": "I like knowing exactly what success looks like"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 2,
+          "MSD": 3
+        },
+        "B": {
+          "SCL": 3,
+          "MSD": 1
+        }
+      },
+      "latency_seconds": 0.161,
+      "timestamp": "2026-01-14T00:35:52.542894Z"
+    },
+    {
+      "id": 6,
+      "text": "When faced with a tight deadline and limited information, you are more likely to:",
+      "chosen_label": "A",
+      "chosen_text": "Decide quickly and refine later",
+      "chosen_scores": {
+        "CCD": 3,
+        "AJL": 2
+      },
+      "option_label_map": {
+        "A": "Decide quickly and refine later",
+        "B": "Slow down to reduce uncertainty"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 3,
+          "AJL": 2
+        },
+        "B": {
+          "CCD": 2,
+          "ERL": 2
+        }
+      },
+      "latency_seconds": 0.16,
+      "timestamp": "2026-01-14T00:35:52.702864Z"
+    },
+    {
+      "id": 7,
+      "text": "You\u2019re solving a problem others find confusing. Your instinct is to:",
+      "chosen_label": "A",
+      "chosen_text": "Break it down step by step",
+      "chosen_scores": {
+        "CCD": 2,
+        "CIL": 2
+      },
+      "option_label_map": {
+        "A": "Break it down step by step",
+        "B": "Look for a pattern or shortcut"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 2,
+          "CIL": 2
+        },
+        "B": {
+          "CCD": 3,
+          "AJL": 2
+        }
+      },
+      "latency_seconds": 0.183,
+      "timestamp": "2026-01-14T00:35:52.886477Z"
+    },
+    {
+      "id": 8,
+      "text": "Which feels more natural?",
+      "chosen_label": "A",
+      "chosen_text": "Making decisions based on experience and intuition",
+      "chosen_scores": {
+        "CCD": 3,
+        "AJL": 2
+      },
+      "option_label_map": {
+        "A": "Making decisions based on experience and intuition",
+        "B": "Making decisions based on careful analysis"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 3,
+          "AJL": 2
+        },
+        "B": {
+          "CCD": 2,
+          "CIL": 3
+        }
+      },
+      "latency_seconds": 0.152,
+      "timestamp": "2026-01-14T00:35:53.038909Z"
+    },
+    {
+      "id": 9,
+      "text": "If new information contradicts your original plan, you tend to:",
+      "chosen_label": "A",
+      "chosen_text": "Adjust quickly",
+      "chosen_scores": {
+        "CIL": 2,
+        "CVL": 3
+      },
+      "option_label_map": {
+        "A": "Adjust quickly",
+        "B": "Reevaluate entire approach"
+      },
+      "option_label_scores": {
+        "A": {
+          "CIL": 2,
+          "CVL": 3
+        },
+        "B": {
+          "CIL": 3,
+          "CCD": 2
+        }
+      },
+      "latency_seconds": 0.183,
+      "timestamp": "2026-01-14T00:35:53.222570Z"
+    },
+    {
+      "id": 10,
+      "text": "Which situation is more mentally draining?",
+      "chosen_label": "A",
+      "chosen_text": "Too many options",
+      "chosen_scores": {
+        "CCD": 3,
+        "CVL": 2
+      },
+      "option_label_map": {
+        "A": "Too many options",
+        "B": "Too few options"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 3,
+          "CVL": 2
+        },
+        "B": {
+          "CCD": 2,
+          "MSD": 2
+        }
+      },
+      "latency_seconds": 0.135,
+      "timestamp": "2026-01-14T00:35:53.358112Z"
+    },
+    {
+      "id": 11,
+      "text": "When plans change unexpectedly, your first internal reaction is usually:",
+      "chosen_label": "A",
+      "chosen_text": "Brief frustration, then focus",
+      "chosen_scores": {
+        "CVL": 2,
+        "ERL": 3
+      },
+      "option_label_map": {
+        "A": "Brief frustration, then focus",
+        "B": "Immediate problem-solving",
+        "C": "Lingering stress"
+      },
+      "option_label_scores": {
+        "A": {
+          "CVL": 2,
+          "ERL": 3
+        },
+        "B": {
+          "CVL": 3,
+          "AJL": 2
+        },
+        "C": {
+          "CVL": 3,
+          "ERL": 3
+        }
+      },
+      "latency_seconds": 0.175,
+      "timestamp": "2026-01-14T00:35:53.533930Z"
+    },
+    {
+      "id": 12,
+      "text": "Under pressure, you tend to become:",
+      "chosen_label": "A",
+      "chosen_text": "More reactive",
+      "chosen_scores": {
+        "ERL": 3,
+        "CVL": 3
+      },
+      "option_label_map": {
+        "A": "More reactive",
+        "B": "More focused",
+        "C": "More cautious"
+      },
+      "option_label_scores": {
+        "A": {
+          "ERL": 3,
+          "CVL": 3
+        },
+        "B": {
+          "ERL": 2,
+          "CVL": 2
+        },
+        "C": {
+          "ERL": 2,
+          "AJL": 2
+        }
+      },
+      "latency_seconds": 0.192,
+      "timestamp": "2026-01-14T00:35:53.725906Z"
+    },
+    {
+      "id": 13,
+      "text": "After a stressful workday, you typically:",
+      "chosen_label": "A",
+      "chosen_text": "Need time alone",
+      "chosen_scores": {
+        "ERL": 3,
+        "ICI": 2
+      },
+      "option_label_map": {
+        "A": "Need time alone",
+        "B": "Continue thinking",
+        "C": "Recover quickly"
+      },
+      "option_label_scores": {
+        "A": {
+          "ERL": 3,
+          "ICI": 2
+        },
+        "B": {
+          "ERL": 3,
+          "CCD": 2
+        },
+        "C": {
+          "ERL": 2,
+          "MSD": 2
+        }
+      },
+      "latency_seconds": 0.144,
+      "timestamp": "2026-01-14T00:35:53.869916Z"
+    },
+    {
+      "id": 14,
+      "text": "When something goes wrong that you didn\u2019t cause, you usually:",
+      "chosen_label": "A",
+      "chosen_text": "Feel unsettled until it\u2019s resolved",
+      "chosen_scores": {
+        "ERL": 3,
+        "CVL": 3
+      },
+      "option_label_map": {
+        "A": "Feel unsettled until it\u2019s resolved",
+        "B": "Accept it and move forward",
+        "C": "Feel irritated but adjust"
+      },
+      "option_label_scores": {
+        "A": {
+          "ERL": 3,
+          "CVL": 3
+        },
+        "B": {
+          "ERL": 2,
+          "CVL": 2
+        },
+        "C": {
+          "ERL": 3,
+          "CVL": 2
+        }
+      },
+      "latency_seconds": 0.152,
+      "timestamp": "2026-01-14T00:35:54.021991Z"
+    },
+    {
+      "id": 15,
+      "text": "Which statement fits better?",
+      "chosen_label": "A",
+      "chosen_text": "Stress slows my performance",
+      "chosen_scores": {
+        "ERL": 3,
+        "CVL": 2
+      },
+      "option_label_map": {
+        "A": "Stress slows my performance",
+        "B": "Stress sharpens my performance"
+      },
+      "option_label_scores": {
+        "A": {
+          "ERL": 3,
+          "CVL": 2
+        },
+        "B": {
+          "ERL": 2,
+          "MSD": 3
+        }
+      },
+      "latency_seconds": 0.168,
+      "timestamp": "2026-01-14T00:35:54.189937Z"
+    },
+    {
+      "id": 16,
+      "text": "Rank what motivates you most at work (pick the top choice):",
+      "chosen_label": "A",
+      "chosen_text": "Improving my skills",
+      "chosen_scores": {
+        "MSD": 2,
+        "CIL": 2
+      },
+      "option_label_map": {
+        "A": "Improving my skills",
+        "B": "Freedom in how I work",
+        "C": "Being recognized for results"
+      },
+      "option_label_scores": {
+        "A": {
+          "MSD": 2,
+          "CIL": 2
+        },
+        "B": {
+          "MSD": 3,
+          "AJL": 3
+        },
+        "C": {
+          "MSD": 1,
+          "ICI": 2
+        }
+      },
+      "latency_seconds": 0.183,
+      "timestamp": "2026-01-14T00:35:54.373748Z"
+    },
+    {
+      "id": 17,
+      "text": "Which would feel more draining long-term?",
+      "chosen_label": "A",
+      "chosen_text": "Repetitive tasks",
+      "chosen_scores": {
+        "MSD": 1,
+        "CVL": 1
+      },
+      "option_label_map": {
+        "A": "Repetitive tasks",
+        "B": "Constant evaluation",
+        "C": "Unclear expectations"
+      },
+      "option_label_scores": {
+        "A": {
+          "MSD": 1,
+          "CVL": 1
+        },
+        "B": {
+          "MSD": 3,
+          "ERL": 3
+        },
+        "C": {
+          "MSD": 2,
+          "SCL": 2
+        }
+      },
+      "latency_seconds": 0.14,
+      "timestamp": "2026-01-14T00:35:54.514556Z"
+    },
+    {
+      "id": 18,
+      "text": "You feel most satisfied at work when:",
+      "chosen_label": "A",
+      "chosen_text": "You\u2019ve mastered something difficult",
+      "chosen_scores": {
+        "MSD": 3,
+        "CIL": 3
+      },
+      "option_label_map": {
+        "A": "You\u2019ve mastered something difficult",
+        "B": "Others notice your contribution",
+        "C": "You\u2019ve completed tasks efficiently"
+      },
+      "option_label_scores": {
+        "A": {
+          "MSD": 3,
+          "CIL": 3
+        },
+        "B": {
+          "MSD": 2,
+          "ICI": 2
+        },
+        "C": {
+          "MSD": 1,
+          "CCD": 2
+        }
+      },
+      "latency_seconds": 0.188,
+      "timestamp": "2026-01-14T00:35:54.702443Z"
+    },
+    {
+      "id": 19,
+      "text": "Which role sounds more appealing?",
+      "chosen_label": "A",
+      "chosen_text": "One with guidance and support",
+      "chosen_scores": {
+        "SCL": 2,
+        "MSD": 2
+      },
+      "option_label_map": {
+        "A": "One with guidance and support",
+        "B": "One with independence and responsibility"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 2,
+          "MSD": 2
+        },
+        "B": {
+          "SCL": 3,
+          "AJL": 3
+        }
+      },
+      "latency_seconds": 0.153,
+      "timestamp": "2026-01-14T00:35:54.855360Z"
+    },
+    {
+      "id": 20,
+      "text": "When starting a new role, what matters most early on?",
+      "chosen_label": "A",
+      "chosen_text": "Feeling acknowledged",
+      "chosen_scores": {
+        "MSD": 2,
+        "ICI": 2
+      },
+      "option_label_map": {
+        "A": "Feeling acknowledged",
+        "B": "Feeling competent",
+        "C": "Feeling trusted"
+      },
+      "option_label_scores": {
+        "A": {
+          "MSD": 2,
+          "ICI": 2
+        },
+        "B": {
+          "MSD": 1,
+          "CCD": 2
+        },
+        "C": {
+          "MSD": 3,
+          "AJL": 3
+        }
+      },
+      "latency_seconds": 0.199,
+      "timestamp": "2026-01-14T00:35:55.054648Z"
+    },
+    {
+      "id": 21,
+      "text": "During a disagreement at work, you usually:",
+      "chosen_label": "A",
+      "chosen_text": "Ask questions to understand",
+      "chosen_scores": {
+        "ICI": 2,
+        "CIL": 2
+      },
+      "option_label_map": {
+        "A": "Ask questions to understand",
+        "B": "Defend your position clearly",
+        "C": "Step back and revisit later"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 2,
+          "CIL": 2
+        },
+        "B": {
+          "ICI": 3,
+          "AJL": 2
+        },
+        "C": {
+          "ICI": 1,
+          "ERL": 2
+        }
+      },
+      "latency_seconds": 0.128,
+      "timestamp": "2026-01-14T00:35:55.183488Z"
+    },
+    {
+      "id": 22,
+      "text": "If a teammate is struggling, you are more likely to:",
+      "chosen_label": "A",
+      "chosen_text": "Give them space",
+      "chosen_scores": {
+        "ICI": 1,
+        "ERL": 2
+      },
+      "option_label_map": {
+        "A": "Give them space",
+        "B": "Inform a supervisor",
+        "C": "Offer help directly"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 1,
+          "ERL": 2
+        },
+        "B": {
+          "ICI": 2,
+          "AJL": 2
+        },
+        "C": {
+          "ICI": 3,
+          "MSD": 2
+        }
+      },
+      "latency_seconds": 0.159,
+      "timestamp": "2026-01-14T00:35:55.342553Z"
+    },
+    {
+      "id": 23,
+      "text": "Which feels more uncomfortable?",
+      "chosen_label": "A",
+      "chosen_text": "Giving direct feedback",
+      "chosen_scores": {
+        "ICI": 3,
+        "ERL": 2
+      },
+      "option_label_map": {
+        "A": "Giving direct feedback",
+        "B": "Receiving direct feedback"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 3,
+          "ERL": 2
+        },
+        "B": {
+          "ICI": 1,
+          "ERL": 2
+        }
+      },
+      "latency_seconds": 0.168,
+      "timestamp": "2026-01-14T00:35:55.511230Z"
+    },
+    {
+      "id": 24,
+      "text": "In group settings, you tend to:",
+      "chosen_label": "A",
+      "chosen_text": "Speak up early",
+      "chosen_scores": {
+        "ICI": 3,
+        "AJL": 2
+      },
+      "option_label_map": {
+        "A": "Speak up early",
+        "B": "Listen first, then contribute",
+        "C": "Speak only when needed"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 3,
+          "AJL": 2
+        },
+        "B": {
+          "ICI": 2,
+          "CIL": 2
+        },
+        "C": {
+          "ICI": 1,
+          "ERL": 2
+        }
+      },
+      "latency_seconds": 0.192,
+      "timestamp": "2026-01-14T00:35:55.703634Z"
+    },
+    {
+      "id": 25,
+      "text": "When working with others, what matters most to you?",
+      "chosen_label": "A",
+      "chosen_text": "Clear roles",
+      "chosen_scores": {
+        "ICI": 1,
+        "SCL": 3
+      },
+      "option_label_map": {
+        "A": "Clear roles",
+        "B": "Efficient outcomes",
+        "C": "Mutual respect"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 1,
+          "SCL": 3
+        },
+        "B": {
+          "ICI": 3,
+          "CCD": 3
+        },
+        "C": {
+          "ICI": 2,
+          "ERL": 2
+        }
+      },
+      "latency_seconds": 0.151,
+      "timestamp": "2026-01-14T00:35:55.854952Z"
+    },
+    {
+      "id": 26,
+      "text": "When expectations are unclear, which approach feels more natural?",
+      "chosen_label": "A",
+      "chosen_text": "Waiting until direction is clarified",
+      "chosen_scores": {
+        "SCL": 2,
+        "AJL": 1
+      },
+      "option_label_map": {
+        "A": "Waiting until direction is clarified",
+        "B": "Creating your own structure"
+      },
+      "option_label_scores": {
+        "A": {
+          "SCL": 2,
+          "AJL": 1
+        },
+        "B": {
+          "SCL": 3,
+          "AJL": 2
+        }
+      },
+      "latency_seconds": 0.21,
+      "timestamp": "2026-01-14T00:35:56.065062Z"
+    },
+    {
+      "id": 27,
+      "text": "When faced with a complex problem, you prefer to:",
+      "chosen_label": "A",
+      "chosen_text": "Fully understand all variables first",
+      "chosen_scores": {
+        "CCD": 2,
+        "CIL": 3
+      },
+      "option_label_map": {
+        "A": "Fully understand all variables first",
+        "B": "Simplify it as quickly as possible"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 2,
+          "CIL": 3
+        },
+        "B": {
+          "CCD": 3,
+          "CIL": 2
+        }
+      },
+      "latency_seconds": 0.133,
+      "timestamp": "2026-01-14T00:35:56.197873Z"
+    },
+    {
+      "id": 28,
+      "text": "If you\u2019re unsure about a decision, you\u2019re more likely to:",
+      "chosen_label": "A",
+      "chosen_text": "Trust your judgment",
+      "chosen_scores": {
+        "CCD": 3,
+        "AJL": 2
+      },
+      "option_label_map": {
+        "A": "Trust your judgment",
+        "B": "Seek additional input"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 3,
+          "AJL": 2
+        },
+        "B": {
+          "CCD": 2,
+          "ICI": 2
+        }
+      },
+      "latency_seconds": 0.184,
+      "timestamp": "2026-01-14T00:35:56.382071Z"
+    },
+    {
+      "id": 29,
+      "text": "Under sustained pressure, you usually:",
+      "chosen_label": "A",
+      "chosen_text": "Maintain steady performance",
+      "chosen_scores": {
+        "CVL": 2,
+        "ERL": 3
+      },
+      "option_label_map": {
+        "A": "Maintain steady performance",
+        "B": "Perform well, then fatigue",
+        "C": "Struggle to maintain focus"
+      },
+      "option_label_scores": {
+        "A": {
+          "CVL": 2,
+          "ERL": 3
+        },
+        "B": {
+          "CVL": 3,
+          "ERL": 2
+        },
+        "C": {
+          "CVL": 3,
+          "ERL": 3
+        }
+      },
+      "latency_seconds": 0.159,
+      "timestamp": "2026-01-14T00:35:56.541702Z"
+    },
+    {
+      "id": 30,
+      "text": "You\u2019re more motivated by:",
+      "chosen_label": "A",
+      "chosen_text": "Predictable success",
+      "chosen_scores": {
+        "MSD": 1,
+        "ERL": 2
+      },
+      "option_label_map": {
+        "A": "Predictable success",
+        "B": "Challenging work"
+      },
+      "option_label_scores": {
+        "A": {
+          "MSD": 1,
+          "ERL": 2
+        },
+        "B": {
+          "MSD": 3,
+          "CIL": 3
+        }
+      },
+      "latency_seconds": 0.536,
+      "timestamp": "2026-01-14T00:35:57.078088Z"
+    },
+    {
+      "id": 31,
+      "text": "In discussions, you usually focus on:",
+      "chosen_label": "A",
+      "chosen_text": "Getting your point across",
+      "chosen_scores": {
+        "ICI": 3,
+        "AJL": 2
+      },
+      "option_label_map": {
+        "A": "Getting your point across",
+        "B": "Reaching shared understanding"
+      },
+      "option_label_scores": {
+        "A": {
+          "ICI": 3,
+          "AJL": 2
+        },
+        "B": {
+          "ICI": 1,
+          "CIL": 2
+        }
+      },
+      "latency_seconds": 0.334,
+      "timestamp": "2026-01-14T00:35:57.412742Z"
+    },
+    {
+      "id": 32,
+      "text": "When evaluating multiple solutions, you prefer:",
+      "chosen_label": "A",
+      "chosen_text": "The most thorough solution",
+      "chosen_scores": {
+        "CCD": 2,
+        "MSD": 3
+      },
+      "option_label_map": {
+        "A": "The most thorough solution",
+        "B": "The most efficient solution"
+      },
+      "option_label_scores": {
+        "A": {
+          "CCD": 2,
+          "MSD": 3
+        },
+        "B": {
+          "CCD": 3,
+          "MSD": 2
+        }
+      },
+      "latency_seconds": 0.729,
+      "timestamp": "2026-01-14T00:35:58.142103Z"
+    }
+  ],
+  "aggregates": {
+    "AJL": {
+      "total": 13,
+      "count": 8,
+      "average": 1.625
+    },
+    "CCD": {
+      "total": 19,
+      "count": 8,
+      "average": 2.375
+    },
+    "CIL": {
+      "total": 14,
+      "count": 6,
+      "average": 2.333
+    },
+    "CVL": {
+      "total": 21,
+      "count": 9,
+      "average": 2.333
+    },
+    "ERL": {
+      "total": 24,
+      "count": 9,
+      "average": 2.667
+    },
+    "ICI": {
+      "total": 17,
+      "count": 8,
+      "average": 2.125
+    },
+    "MSD": {
+      "total": 17,
+      "count": 8,
+      "average": 2.125
+    },
+    "SCL": {
+      "total": 20,
+      "count": 8,
+      "average": 2.5
+    }
+  },
+  "latency_summary": {
+    "median_latency_sec": 0.168,
+    "latency_flags": [
+      {
+        "id": 1,
+        "latency": 20.278,
+        "flag": "very_slow"
+      },
+      {
+        "id": 2,
+        "latency": 0.168,
+        "flag": null
+      },
+      {
+        "id": 3,
+        "latency": 0.151,
+        "flag": null
+      },
+      {
+        "id": 4,
+        "latency": 0.152,
+        "flag": null
+      },
+      {
+        "id": 5,
+        "latency": 0.161,
+        "flag": null
+      },
+      {
+        "id": 6,
+        "latency": 0.16,
+        "flag": null
+      },
+      {
+        "id": 7,
+        "latency": 0.183,
+        "flag": null
+      },
+      {
+        "id": 8,
+        "latency": 0.152,
+        "flag": null
+      },
+      {
+        "id": 9,
+        "latency": 0.183,
+        "flag": null
+      },
+      {
+        "id": 10,
+        "latency": 0.135,
+        "flag": null
+      },
+      {
+        "id": 11,
+        "latency": 0.175,
+        "flag": null
+      },
+      {
+        "id": 12,
+        "latency": 0.192,
+        "flag": null
+      },
+      {
+        "id": 13,
+        "latency": 0.144,
+        "flag": null
+      },
+      {
+        "id": 14,
+        "latency": 0.152,
+        "flag": null
+      },
+      {
+        "id": 15,
+        "latency": 0.168,
+        "flag": null
+      },
+      {
+        "id": 16,
+        "latency": 0.183,
+        "flag": null
+      },
+      {
+        "id": 17,
+        "latency": 0.14,
+        "flag": null
+      },
+      {
+        "id": 18,
+        "latency": 0.188,
+        "flag": null
+      },
+      {
+        "id": 19,
+        "latency": 0.153,
+        "flag": null
+      },
+      {
+        "id": 20,
+        "latency": 0.199,
+        "flag": null
+      },
+      {
+        "id": 21,
+        "latency": 0.128,
+        "flag": null
+      },
+      {
+        "id": 22,
+        "latency": 0.159,
+        "flag": null
+      },
+      {
+        "id": 23,
+        "latency": 0.168,
+        "flag": null
+      },
+      {
+        "id": 24,
+        "latency": 0.192,
+        "flag": null
+      },
+      {
+        "id": 25,
+        "latency": 0.151,
+        "flag": null
+      },
+      {
+        "id": 26,
+        "latency": 0.21,
+        "flag": null
+      },
+      {
+        "id": 27,
+        "latency": 0.133,
+        "flag": null
+      },
+      {
+        "id": 28,
+        "latency": 0.184,
+        "flag": null
+      },
+      {
+        "id": 29,
+        "latency": 0.159,
+        "flag": null
+      },
+      {
+        "id": 30,
+        "latency": 0.536,
+        "flag": "very_slow"
+      },
+      {
+        "id": 31,
+        "latency": 0.334,
+        "flag": null
+      },
+      {
+        "id": 32,
+        "latency": 0.729,
+        "flag": "very_slow"
+      }
+    ]
+  },
+  "consistency": {
+    "SCL": 0.465,
+    "AJL": 0.482,
+    "CCD": 0.256,
+    "CVL": 0.293,
+    "MSD": 0.165,
+    "CIL": 0.484,
+    "ERL": 0.5,
+    "ICI": 0.165
+  }
+}

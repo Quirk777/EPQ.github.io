@@ -25,8 +25,12 @@ WORKDIR /app
 # Copy requirements first to leverage Docker layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with verbose output for Railway debugging
+RUN pip install --no-cache-dir --verbose -r requirements.txt
+
+# Verify critical dependencies are installed
+RUN python -c "import python_multipart; print('✅ python-multipart installed')" || (echo "❌ python-multipart FAILED" && exit 1)
+RUN python -c "import email_validator; print('✅ email-validator installed')" || (echo "❌ email-validator FAILED" && exit 1)
 
 # Copy application code
 COPY . .

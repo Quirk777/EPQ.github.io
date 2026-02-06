@@ -38,7 +38,7 @@ export default function HomePage() {
               Generate structured reports for hiring decisions.
             </p>
             <div style={s.heroActions}>
-              <Link href="/employer/register" style={s.btnPrimary}>Start Trial</Link>
+              <Link href="/employer/signup" style={s.btnPrimary}>Start Trial</Link>
               <Link href="#platform" style={s.btnSecondary}>Documentation</Link>
             </div>
           </div>

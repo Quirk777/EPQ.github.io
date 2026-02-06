@@ -111,7 +111,17 @@ class AssessmentBuilder:
     }
     
     def __init__(self):
-        self._init_tables()
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only initialize when first used"""
+        if not self._initialized:
+            try:
+                self._init_tables()
+                self._initialized = True
+            except Exception as e:
+                # If database isn't ready, log and continue without assessment builder
+                print(f"Warning: Could not initialize assessment builder: {e}")
     
     def _init_tables(self):
         """Create assessment template tables"""
@@ -160,6 +170,9 @@ class AssessmentBuilder:
         white_label_name: Optional[str] = None
     ) -> str:
         """Create a new assessment template"""
+        self._ensure_initialized()
+        if not self._initialized:
+            raise Exception("Assessment builder not available")  # Service unavailable
         import uuid
         conn = db.get_db()
         

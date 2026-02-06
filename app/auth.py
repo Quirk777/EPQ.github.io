@@ -1,5 +1,6 @@
 ﻿import os
 import re
+import logging
 from app.email_gmail import send_email_gmail_smtp
 from app.email_subscriptions import upsert_subscription
 from app.services.email_service import send_verification_email, send_password_reset_email
@@ -15,6 +16,7 @@ from app.services import auth_db
 router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 limiter = get_limiter()
+logger = logging.getLogger("epq.auth")
 
 def require_employer(request: Request):
     emp_id = request.session.get("employer_id")
@@ -64,10 +66,22 @@ async def register(request: Request, response: Response):
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
 
+    # Redacted email for logging (keep domain for debugging)
+    email_parts = email.split("@")
+    redacted_email = f"{email_parts[0][:2]}***@{email_parts[1]}" if len(email_parts) == 2 and len(email_parts[0]) > 2 else email
+
     try:
         existing = auth_db.get_employer_by_email(email)
         if existing:
-            raise HTTPException(status_code=409, detail="Email already registered")
+            logger.info(f"Registration failed - email already exists: {redacted_email}")
+            raise HTTPException(
+                status_code=409, 
+                detail={
+                    "code": "EMAIL_TAKEN",
+                    "message": "An account already exists for this email address.",
+                    "field": "email"
+                }
+            )
 
         employer_id = db.create_employer(company_name, email)
         auth_db.set_employer_password(employer_id, pwd_context.hash(password))
@@ -76,6 +90,7 @@ async def register(request: Request, response: Response):
         verification_token = auth_db.generate_verification_token(employer_id)
         send_verification_email(email, verification_token)
 
+        logger.info(f"Registration successful for: {redacted_email}, employer_id: {employer_id}")
         request.session["employer_id"] = employer_id
         return {
             "status": "ok", 
@@ -85,14 +100,35 @@ async def register(request: Request, response: Response):
     except HTTPException:
         raise  # Re-raise HTTP exceptions (like 409 for existing email)
     except Exception as e:
+        logger.error(f"Registration failed for {redacted_email}: {e}")
         # Database or other system errors
-        if "no such table" in str(e).lower() or "relation" in str(e).lower() and "does not exist" in str(e).lower():
+        error_str = str(e).lower()
+        if "no such table" in error_str or ("relation" in error_str and "does not exist" in error_str):
             raise HTTPException(
                 status_code=503, 
-                detail="Database not properly configured. Please contact support."
+                detail={
+                    "code": "DATABASE_ERROR",
+                    "message": "Database not properly configured. Please contact support."
+                }
+            )
+        elif "unique constraint" in error_str or "duplicate key" in error_str:
+            # This shouldn't happen since we check above, but just in case
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "EMAIL_TAKEN",
+                    "message": "An account already exists for this email address.",
+                    "field": "email"
+                }
             )
         else:
-            raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
+            raise HTTPException(
+                status_code=500, 
+                detail={
+                    "code": "REGISTRATION_FAILED",
+                    "message": "Registration failed. Please try again."
+                }
+            )
 
 @router.post("/login")
 @limiter.limit("5/minute")

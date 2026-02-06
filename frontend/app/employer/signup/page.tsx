@@ -24,6 +24,7 @@ export default function EmployerSignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const passwordValid = passwordRules.every((r) => r.test(password));
@@ -35,6 +36,7 @@ export default function EmployerSignupPage() {
 
     setBusy(true);
     setError(null);
+    setEmailError(null);
     try {
       const res = await fetch("/api/employer/signup", {
         method: "POST",
@@ -51,8 +53,25 @@ export default function EmployerSignupPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const detail = data?.detail || "Sign up failed";
-        throw new Error(detail);
+        let errorMessage = "Sign up failed";
+        let fieldError = null;
+
+        if (data?.detail) {
+          if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          } else if (data.detail.message) {
+            errorMessage = data.detail.message;
+            fieldError = data.detail.field || null;
+          }
+        }
+
+        // Special handling for email taken error
+        if (data?.detail?.code === 'EMAIL_TAKEN') {
+          errorMessage = "This email is already registered. Try logging in instead.";
+          setEmailError(errorMessage);
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Show success message
@@ -202,29 +221,46 @@ export default function EmployerSignupPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null); // Clear error when user types
+              }}
               placeholder="you@company.com"
               required
               style={{
                 width: "100%",
                 padding: "12px 16px",
                 borderRadius: 12,
-                border: "1px solid var(--border-default)",
-                background: "var(--surface-2)",
+                border: emailError ? "1px solid var(--color-error)" : "1px solid var(--border-default)",
+                background: emailError ? "rgba(239, 68, 68, 0.05)" : "var(--surface-2)",
                 color: "var(--text-primary)",
                 fontSize: 15,
                 outline: "none",
                 transition: "all 0.2s ease",
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent-blue)";
-                e.currentTarget.style.background = "var(--surface-3)";
+                if (!emailError) {
+                  e.currentTarget.style.borderColor = "var(--accent-blue)";
+                  e.currentTarget.style.background = "var(--surface-3)";
+                }
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-default)";
-                e.currentTarget.style.background = "var(--surface-2)";
+                if (!emailError) {
+                  e.currentTarget.style.borderColor = "var(--border-default)";
+                  e.currentTarget.style.background = "var(--surface-2)";
+                }
               }}
             />
+            {emailError && (
+              <div style={{
+                marginTop: 6,
+                fontSize: 13,
+                color: "var(--color-error)",
+                fontWeight: 500,
+              }}>
+                {emailError}
+              </div>
+            )}
           </label>
 
           {/* Company Name (Optional) */}

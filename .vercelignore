@@ -1,0 +1,17 @@
+# Exclude Python backend files
+*.py
+app/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite
+uploads/
+reports/
+data/
+downloads/
+output/
+
+# Keep only frontend
+!frontend/**

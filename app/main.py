@@ -135,8 +135,14 @@ if FRONTEND_DIR.exists():
 
 @app.on_event("startup")
 def startup():
-    db.init_db()
-    logger.info("DB initialized")
+    try:
+        db.init_db()
+        logger.info("DB initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        if IS_PRODUCTION:
+            raise RuntimeError("Database connection required in production")
+    
     logger.info(f"Environment: {ENVIRONMENT}")
     
     # Log database info
@@ -145,6 +151,49 @@ def startup():
         logger.info("Database: PostgreSQL (production)")
     else:
         logger.info(f"Database: SQLite at {db.DB_PATH}")
+
+
+# Health check endpoints
+@app.get("/health")
+def health_check():
+    """Basic health check"""
+    return {"status": "healthy", "environment": ENVIRONMENT}
+
+
+@app.get("/health/db")
+def health_check_db():
+    """Database connectivity health check"""
+    try:
+        con = db.connect()
+        cur = con.cursor()
+        
+        # Test basic query
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url:
+            cur.execute("SELECT 1")
+        else:
+            cur.execute("SELECT 1")
+        
+        result = cur.fetchone()
+        con.close()
+        
+        if result:
+            return {
+                "status": "healthy",
+                "database": "PostgreSQL" if database_url else "SQLite",
+                "connection": "OK"
+            }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy", 
+                "database": "PostgreSQL" if os.environ.get("DATABASE_URL") else "SQLite",
+                "error": "Database connection failed",
+                "message": "DB not configured properly. Check DATABASE_URL."
+            }
+        )
 
 
 # Error handlers

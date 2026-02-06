@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import ParticleBackground from "../../components/ParticleBackground";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -54,7 +53,6 @@ export default function ForgotPasswordPage() {
         position: "relative" as const,
         overflow: "hidden",
       }}>
-        <ParticleBackground />
         
         <div style={{
           position: "relative" as const,
@@ -133,7 +131,6 @@ export default function ForgotPasswordPage() {
       position: "relative" as const,
       overflow: "hidden",
     }}>
-      <ParticleBackground />
 
       {/* Gradient Orbs */}
       <div style={{

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import ParticleBackground from "../../components/ParticleBackground";
 
 type PasswordRule = {
   label: string;
@@ -83,7 +82,6 @@ export default function EmployerSignupPage() {
         position: "relative" as const,
         overflow: "hidden",
       }}>
-        <ParticleBackground />
 
         <div style={{
           position: "relative" as const,
@@ -138,7 +136,6 @@ export default function EmployerSignupPage() {
       position: "relative" as const,
       overflow: "hidden",
     }}>
-      <ParticleBackground />
 
       <div style={{
         position: "relative" as const,
@@ -407,29 +404,24 @@ export default function EmployerSignupPage() {
             disabled={!canSubmit}
             style={{
               width: "100%",
-              padding: "14px 20px",
+              padding: "12px 16px",
               borderRadius: 12,
-              border: "none",
-              background: canSubmit
-                ? "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)"
-                : "rgba(255, 255, 255, 0.1)",
-              color: canSubmit ? "#ffffff" : "rgba(255, 255, 255, 0.4)",
+              border: "1px solid #111",
+              background: canSubmit ? "#111" : "#f5f5f5",
+              color: canSubmit ? "#ffffff" : "#9ca3af",
               fontSize: 15,
               fontWeight: 700,
               cursor: canSubmit ? "pointer" : "not-allowed",
-              transition: "all 0.3s ease",
-              boxShadow: canSubmit ? "0 4px 20px rgba(99, 102, 241, 0.4)" : "none",
+              transition: "all 0.15s ease",
             }}
             onMouseEnter={(e) => {
               if (canSubmit) {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 25px rgba(99, 102, 241, 0.5)";
+                e.currentTarget.style.background = "#1f1f1f";
               }
             }}
             onMouseLeave={(e) => {
               if (canSubmit) {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(99, 102, 241, 0.4)";
+                e.currentTarget.style.background = "#111";
               }
             }}
           >

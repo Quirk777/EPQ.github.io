@@ -64,23 +64,35 @@ async def register(request: Request, response: Response):
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
 
-    existing = auth_db.get_employer_by_email(email)
-    if existing:
-        raise HTTPException(status_code=409, detail="Email already registered")
+    try:
+        existing = auth_db.get_employer_by_email(email)
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already registered")
 
-    employer_id = db.create_employer(company_name, email)
-    auth_db.set_employer_password(employer_id, pwd_context.hash(password))
-    
-    # Generate verification token and send email
-    verification_token = auth_db.generate_verification_token(employer_id)
-    send_verification_email(email, verification_token)
+        employer_id = db.create_employer(company_name, email)
+        auth_db.set_employer_password(employer_id, pwd_context.hash(password))
+        
+        # Generate verification token and send email
+        verification_token = auth_db.generate_verification_token(employer_id)
+        send_verification_email(email, verification_token)
 
-    request.session["employer_id"] = employer_id
-    return {
-        "status": "ok", 
-        "employer_id": employer_id,
-        "message": "Registration successful. Please check your email to verify your account."
-    }
+        request.session["employer_id"] = employer_id
+        return {
+            "status": "ok", 
+            "employer_id": employer_id,
+            "message": "Registration successful. Please check your email to verify your account."
+        }
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like 409 for existing email)
+    except Exception as e:
+        # Database or other system errors
+        if "no such table" in str(e).lower() or "relation" in str(e).lower() and "does not exist" in str(e).lower():
+            raise HTTPException(
+                status_code=503, 
+                detail="Database not properly configured. Please contact support."
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
 
 @router.post("/login")
 @limiter.limit("5/minute")

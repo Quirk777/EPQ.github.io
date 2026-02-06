@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ParticleBackground from "../../components/ParticleBackground";
 
 function EmployerLoginContent() {
   const router = useRouter();
@@ -92,7 +91,6 @@ function EmployerLoginContent() {
       position: "relative" as const,
       overflow: "hidden",
     }}>
-      <ParticleBackground />
       <div style={{
         position: "relative" as const,
         zIndex: 1,

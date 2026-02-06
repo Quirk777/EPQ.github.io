@@ -25,7 +25,17 @@ class JourneyAnalytics:
     ]
     
     def __init__(self):
-        self._init_tables()
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only initialize when first used"""
+        if not self._initialized:
+            try:
+                self._init_tables()
+                self._initialized = True
+            except Exception as e:
+                # If database isn't ready, log and continue without analytics
+                print(f"Warning: Could not initialize journey analytics: {e}")
     
     def _init_tables(self):
         """Create tracking tables if they don't exist"""
@@ -88,6 +98,9 @@ class JourneyAnalytics:
         ip_address: Optional[str] = None
     ) -> str:
         """Track a candidate journey event"""
+        self._ensure_initialized()
+        if not self._initialized:
+            return "analytics_disabled"  # Skip if DB not available
         import uuid
         conn = db.get_db()
         

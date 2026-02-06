@@ -37,7 +37,11 @@ def init_db():
     con = connect()
     try:
         cur = con.cursor()
-        cur.execute("PRAGMA journal_mode=WAL;")
+        
+        # Skip SQLite-specific PRAGMA for PostgreSQL
+        database_url = os.environ.get("DATABASE_URL")
+        if not database_url:  # Only run PRAGMA on SQLite
+            cur.execute("PRAGMA journal_mode=WAL;")
         
         # Create employers table
         cur.execute("""
@@ -51,35 +55,27 @@ def init_db():
             verification_token_expires TEXT,
             reset_token TEXT,
             reset_token_expires TEXT,
-            created_utc TEXT DEFAULT CURRENT_TIMESTAMP
+            created_utc TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
         
-        # Add new columns to existing employers table (if they don't exist)
-        try:
-            cur.execute("ALTER TABLE employers ADD COLUMN email_verified INTEGER DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
+        # Add new columns to existing employers table (PostgreSQL compatible)
+        columns_to_add = [
+            ("email_verified", "INTEGER DEFAULT 0"),
+            ("verification_token", "TEXT"),
+            ("verification_token_expires", "TEXT"),
+            ("reset_token", "TEXT"),
+            ("reset_token_expires", "TEXT")
+        ]
         
-        try:
-            cur.execute("ALTER TABLE employers ADD COLUMN verification_token TEXT")
-        except sqlite3.OperationalError:
-            pass
-        
-        try:
-            cur.execute("ALTER TABLE employers ADD COLUMN verification_token_expires TEXT")
-        except sqlite3.OperationalError:
-            pass
-        
-        try:
-            cur.execute("ALTER TABLE employers ADD COLUMN reset_token TEXT")
-        except sqlite3.OperationalError:
-            pass
-        
-        try:
-            cur.execute("ALTER TABLE employers ADD COLUMN reset_token_expires TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for column_name, column_def in columns_to_add:
+            try:
+                if database_url:  # PostgreSQL
+                    cur.execute(f"ALTER TABLE employers ADD COLUMN IF NOT EXISTS {column_name} {column_def}")
+                else:  # SQLite
+                    cur.execute(f"ALTER TABLE employers ADD COLUMN {column_name} {column_def}")
+            except Exception:
+                pass  # Column already exists
         
         # Create assessments table
         cur.execute("""
@@ -123,9 +119,11 @@ def init_db():
         """)
         
         # Create candidate notes table
-        cur.execute("""
+        database_url = os.environ.get("DATABASE_URL")
+        note_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        cur.execute(f"""
         CREATE TABLE IF NOT EXISTS candidate_notes (
-            note_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            note_id {note_id_type},
             candidate_id TEXT NOT NULL,
             author TEXT NOT NULL,
             text TEXT NOT NULL,
@@ -135,9 +133,10 @@ def init_db():
         """)
         
         # Create candidate feedback table
-        cur.execute("""
+        feedback_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        cur.execute(f"""
         CREATE TABLE IF NOT EXISTS candidate_feedback (
-            feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            feedback_id {feedback_id_type},
             candidate_id TEXT NOT NULL,
             category TEXT NOT NULL,
             rating INTEGER NOT NULL,
@@ -162,9 +161,10 @@ def init_db():
         """)
         
         # Create webhook_logs table
-        cur.execute("""
+        log_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        cur.execute(f"""
         CREATE TABLE IF NOT EXISTS webhook_logs (
-            log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            log_id {log_id_type},
             webhook_id TEXT NOT NULL,
             event_type TEXT NOT NULL,
             payload_json TEXT NOT NULL,

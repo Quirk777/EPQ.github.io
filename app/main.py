@@ -84,7 +84,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
     same_site="none" if IS_PRODUCTION else "lax",  # "none" required for cross-origin cookies
-    https_only=https_only_cookies,
+    https_only=https_only_cookies or IS_PRODUCTION,  # Force HTTPS cookies in production
     max_age=7 * 24 * 60 * 60,  # 7 days
 )
 

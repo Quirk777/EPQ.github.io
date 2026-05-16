@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List
 from app.services.employer_epq import get_employer_epq_questions
 from pathlib import Path
+import os
 from json import JSONDecodeError
 from app.auth import require_employer
 from app.services import db
@@ -11,7 +12,7 @@ import epq_core
 router = APIRouter(prefix="/employer", tags=["employer"])
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR = Path(os.environ.get("REPORTS_DIR") or (PROJECT_ROOT / "reports")).expanduser().resolve()
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 def require_active_employer(emp: dict):

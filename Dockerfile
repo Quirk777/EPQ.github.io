@@ -2,15 +2,18 @@ FROM python:3.11-slim
 
 # System deps for wkhtmltopdf + fonts
 RUN apt-get update && apt-get install -y \
-    wget \
+    wkhtmltopdf \
     fontconfig \
     libjpeg62-turbo \
+    libxext6 \
     libxrender1 \
+    libfreetype6 \
+    libfontconfig1 \
+    libglib2.0-0 \
+    libsm6 \
     xfonts-75dpi \
     xfonts-base \
-    && wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb \
-    && apt-get install -y ./wkhtmltox_0.12.6.1-3.bookworm_amd64.deb \
-    && rm -f wkhtmltox_0.12.6.1-3.bookworm_amd64.deb \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,15 +27,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Verify critical deps (correct import names)
-RUN python -c "import multipart; print('✅ python-multipart OK')"
-RUN python -c "import email_validator; print('✅ email-validator OK')"
-
 COPY . .
 
 RUN mkdir -p data reports uploads downloads
 
-# Railway provides PORT; EXPOSE is optional but keep a sensible default
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8001 --proxy-headers --forwarded-allow-ips='*'"]

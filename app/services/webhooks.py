@@ -5,18 +5,12 @@ Webhook management and triggering service.
 import uuid
 import json
 import datetime
-import sqlite3
 import httpx
-from pathlib import Path
 from typing import Dict, List, Optional
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = (PROJECT_ROOT / "epq.db").resolve()
+from app.services import db
 
 def conn():
-    con = sqlite3.connect(str(DB_PATH))
-    con.row_factory = sqlite3.Row
-    return con
+    return db.connect()
 
 def now_iso() -> str:
     return datetime.datetime.utcnow().isoformat()

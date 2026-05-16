@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8001";
+import { getBackendBaseUrl } from "../../../_proxy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +14,7 @@ export async function GET(
     // Forward cookies for authentication
     const cookieHeader = req.headers.get("cookie") || "";
     
-    const backendUrl = `${BACKEND}/reports/by-candidate/${encodeURIComponent(candidate_id)}`;
+    const backendUrl = `${getBackendBaseUrl()}/reports/by-candidate/${encodeURIComponent(candidate_id)}`;
     
     const response = await fetch(backendUrl, {
       headers: {

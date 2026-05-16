@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 import json
-import sqlite3
 from app.services.db import get_db
 
 @dataclass

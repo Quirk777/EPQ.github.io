@@ -1,0 +1,21 @@
+{$DOMAIN:localhost} {
+  encode zstd gzip
+
+  @api_prefixed path /api/employer/branding* /api/employer/roles* /api/employer/compliance* /api/employer/references* /api/employer/attrition* /api/employer/talent-pool*
+  handle @api_prefixed {
+    reverse_proxy backend:8001
+  }
+
+  @api_legacy path /api/*
+  handle_path @api_legacy {
+    reverse_proxy backend:8001
+  }
+
+  reverse_proxy frontend:3000
+
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    Referrer-Policy strict-origin-when-cross-origin
+  }
+}

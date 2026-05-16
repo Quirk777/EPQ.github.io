@@ -5,6 +5,7 @@ Reference Check API Routes
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
+import os
 from app.services.reference_checker import ReferenceChecker
 from app.services.db import get_current_user_from_session
 
@@ -55,7 +56,7 @@ async def create_reference_request(
     # Generate email content
     email_data = checker.generate_reference_email(
         request_id=request_id,
-        base_url="http://localhost:3000"  # TODO: Get from config
+        base_url=(os.getenv("PUBLIC_BASE_URL") or os.getenv("FRONTEND_URL") or "http://127.0.0.1:3000")
     )
     
     return {

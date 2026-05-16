@@ -6,7 +6,7 @@ from app.email_subscriptions import set_subscribed_by_token, get_email_by_token
 router = APIRouter(prefix="/email", tags=["email"])
 
 def _base_url() -> str:
-    return (os.getenv("PUBLIC_BASE_URL") or "http://localhost:3000").rstrip("/")
+  return (os.getenv("PUBLIC_BASE_URL") or os.getenv("FRONTEND_URL") or "http://127.0.0.1:3000").rstrip("/")
 
 @router.get("/unsubscribe", response_class=HTMLResponse)
 def unsubscribe(token: str = Query(..., min_length=10)):

@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pathlib import Path
+import os
 
 from app.auth import require_employer
 from app.services import db
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 # NOTE: We compute REPORTS_DIR here (no import from app.main to avoid circular imports)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # .../python_project
-REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR = Path(os.environ.get("REPORTS_DIR") or (PROJECT_ROOT / "reports")).expanduser().resolve()
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 

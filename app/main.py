@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from pathlib import Path
 import os
 from app.routes.debug import router as debug_router
@@ -15,6 +16,7 @@ import logging
 import epq_core
 from report_generator import generate_pdf_report
 from app.services import db
+from app.services import db_adapter
 
 from app.auth import router as auth_router
 from app.routes.employer import router as employer_router
@@ -32,15 +34,16 @@ from slowapi.errors import RateLimitExceeded
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("epq")
 
-app = FastAPI(title="EPQ Assessment Server (persistent)")
+app = FastAPI(title="EPQ Assessment Server")
 
 # Rate limiter
 limiter = get_limiter()
 app.state.limiter = limiter
 
 # Environment detection
-ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
+ENVIRONMENT = (os.environ.get("ENVIRONMENT", "development") or "development").strip().lower()
 IS_PRODUCTION = ENVIRONMENT == "production"
+PUBLIC_BASE_URL = (os.environ.get("PUBLIC_BASE_URL") or os.environ.get("FRONTEND_URL") or "").rstrip("/")
 
 # Session configuration
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-only-change-me")
@@ -52,39 +55,43 @@ if IS_PRODUCTION and (SESSION_SECRET == "dev-only-change-me" or len(SESSION_SECR
         "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
     )
 
-# HTTPS-only cookies in production
-https_only_cookies = os.environ.get("HTTPS_ONLY_COOKIES", "false").lower() == "true"
-if IS_PRODUCTION and not https_only_cookies:
-    logger.warning("Production environment should use HTTPS_ONLY_COOKIES=true")
+session_cookie_secure = os.environ.get("HTTPS_ONLY_COOKIES", "true" if IS_PRODUCTION else "false").lower() == "true"
+session_same_site = (os.environ.get("SESSION_SAME_SITE", "lax") or "lax").strip().lower()
+if session_same_site not in {"lax", "strict", "none"}:
+    session_same_site = "lax"
+if session_same_site == "none" and not session_cookie_secure:
+    raise RuntimeError("SESSION_SAME_SITE=none requires HTTPS_ONLY_COOKIES=true")
 
-# HTTPS-only cookies in production
-https_only_cookies = os.environ.get("HTTPS_ONLY_COOKIES", "false").lower() == "true"
-if IS_PRODUCTION and not https_only_cookies:
-    logger.warning("Production environment should use HTTPS_ONLY_COOKIES=true")
+trusted_proxy_ips = os.environ.get("TRUSTED_PROXY_IPS", "*")
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=trusted_proxy_ips)
 
-# CORS configuration for split deployment
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001", 
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-]
+# CORS configuration
+cors_origins_env = os.environ.get("CORS_ALLOW_ORIGINS", "").strip()
+if cors_origins_env:
+    allowed_origins = [item.strip().rstrip("/") for item in cors_origins_env.split(",") if item.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
 
-# Add production frontend origin (NOT backend URL)
-frontend_url = os.environ.get("FRONTEND_URL") or os.environ.get("PUBLIC_BASE_URL")
-if frontend_url:
-    frontend_url = frontend_url.rstrip("/")
-    allowed_origins.append(frontend_url)
+if PUBLIC_BASE_URL:
+    allowed_origins.append(PUBLIC_BASE_URL)
     # Add www variant if applicable
-    if "www." not in frontend_url and "localhost" not in frontend_url:
-        allowed_origins.append(frontend_url.replace("://", "://www."))
+    if "www." not in PUBLIC_BASE_URL and "localhost" not in PUBLIC_BASE_URL:
+        allowed_origins.append(PUBLIC_BASE_URL.replace("://", "://www."))
 
-# Session configuration with proper SameSite for cross-origin
+allowed_origins = list(dict.fromkeys(allowed_origins))
+
+# Session configuration
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
-    same_site="none" if IS_PRODUCTION else "lax",  # "none" required for cross-origin cookies
-    https_only=https_only_cookies or IS_PRODUCTION,  # Force HTTPS cookies in production
+    same_site=session_same_site,
+    https_only=session_cookie_secure,
+    session_cookie=os.environ.get("SESSION_COOKIE_NAME", "epq_session"),
     max_age=7 * 24 * 60 * 60,  # 7 days
 )
 
@@ -123,7 +130,7 @@ app.include_router(branding.router)
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
-REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR = Path(os.environ.get("REPORTS_DIR") or (PROJECT_ROOT / "reports")).expanduser().resolve()
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 INDEX_PATH = FRONTEND_DIR / "index.html"
@@ -143,36 +150,26 @@ def startup():
         if IS_PRODUCTION:
             raise RuntimeError("Database connection required in production")
     
-    logger.info(f"Environment: {ENVIRONMENT}")
-    
-    # Log database info
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        logger.info("Database: PostgreSQL (production)")
-    else:
-        logger.info(f"Database: SQLite at {db.DB_PATH}")
+    logger.info("Environment: %s", ENVIRONMENT)
+    logger.info("Public base URL: %s", PUBLIC_BASE_URL or "(not set)")
+    logger.info("Session secure cookies: %s", session_cookie_secure)
+    logger.info("Session same-site: %s", session_same_site)
+    logger.info("Trusted proxy IPs: %s", trusted_proxy_ips)
+    logger.info("Database: %s", db_adapter.database_label())
+    if not db_adapter.is_postgres():
+        logger.info("Database path: %s", db.DB_PATH)
+    logger.info("Reports directory: %s", REPORTS_DIR)
+    logger.info("wkhtmltopdf path: %s", os.environ.get("WKHTMLTOPDF_PATH", "(auto-detect)"))
 
 
 # Health check endpoints
-@app.get("/health")
-def health_check():
-    """Basic health check"""
-    return {"status": "healthy", "environment": ENVIRONMENT}
-
-
 @app.get("/health/db")
 def health_check_db():
     """Database connectivity health check"""
     try:
         con = db.connect()
         cur = con.cursor()
-        
-        # Test basic query
-        database_url = os.environ.get("DATABASE_URL")
-        if database_url:
-            cur.execute("SELECT 1")
-        else:
-            cur.execute("SELECT 1")
+        cur.execute("SELECT 1")
         
         result = cur.fetchone()
         con.close()
@@ -180,7 +177,7 @@ def health_check_db():
         if result:
             return {
                 "status": "healthy",
-                "database": "PostgreSQL" if database_url else "SQLite",
+                "database": db_adapter.database_label(),
                 "connection": "OK"
             }
     except Exception as e:
@@ -189,9 +186,9 @@ def health_check_db():
             status_code=503,
             content={
                 "status": "unhealthy", 
-                "database": "PostgreSQL" if os.environ.get("DATABASE_URL") else "SQLite",
+                "database": db_adapter.database_label(),
                 "error": "Database connection failed",
-                "message": "DB not configured properly. Check DATABASE_URL."
+                "message": "DB not configured properly. Check DATABASE_URL or DB_PATH/SQLITE_PATH."
             }
         )
 
@@ -261,6 +258,15 @@ async def internal_server_error_handler(request: Request, exc: Exception):
 def health():
     return {"ok": True, "environment": ENVIRONMENT}
 
+
+@app.get("/healthz")
+def healthz():
+    return {
+        "status": "ok",
+        "service": "backend",
+        "environment": ENVIRONMENT,
+    }
+
 @app.get("/health/email")
 def health_email():
     """Production email configuration health check - admin only"""
@@ -294,108 +300,3 @@ def health_email():
 def root():
     return "<h1>EPQ API running</h1><p>Go to <a href='/docs'>/docs</a></p>"
 
-
-# -------------------------
-# Background PDF worker
-# -------------------------
-from pathlib import Path
-import time
-
-# def _generate_pdf_background(assessment_id: str, applicant_result: dict, employer_env: str, candidate_id: str):
-#     try:
-#         logger.info("Starting PDF generation for assessment %s", assessment_id)
-
-#         reports_dir = Path(REPORTS_DIR).resolve()
-#         reports_dir.mkdir(parents=True, exist_ok=True)
-
-#         pdf_path = generate_pdf_report(
-#             applicant_result=applicant_result,
-#             employer_environment=employer_env,
-#             candidate_id=candidate_id,
-#             output_dir=str(reports_dir),
-#         )
-
-#         if not pdf_path:
-#             logger.error("PDF generation returned None for %s", assessment_id)
-#             return
-
-#         pdf_file = Path(pdf_path)
-
-#         # If generator returns a relative path, anchor it to reports_dir
-#         if not pdf_file.is_absolute():
-#             pdf_file = (reports_dir / pdf_file).resolve()
-#         else:
-#             pdf_file = pdf_file.resolve()
-
-#         logger.info("PDF generator returned path: %s", pdf_file)
-
-#         # Windows can occasionally lag a beat after writing; retry a few times
-#         for _ in range(5):
-#             if pdf_file.exists() and pdf_file.is_file() and pdf_file.stat().st_size > 0:
-#                 break
-#             time.sleep(0.25)
-
-#         if not (pdf_file.exists() and pdf_file.is_file()):
-#             logger.error("PDF file missing after generation for %s. Expected: %s", assessment_id, pdf_file)
-#             return
-
-#         if pdf_file.stat().st_size == 0:
-#             logger.error("PDF file is zero bytes for %s. Path: %s", assessment_id, pdf_file)
-#             return
-
-#         filename = pdf_file.name
-
-#         # Optional: ensure the file is actually inside REPORTS_DIR
-#         try:
-#             pdf_file.relative_to(reports_dir)
-#         except ValueError:
-#             logger.error("PDF was generated outside REPORTS_DIR. pdf=%s reports_dir=%s", pdf_file, reports_dir)
-#             return
-
-#         db.set_assessment_pdf(assessment_id, filename)
-#         logger.info("PDF saved and DB updated for %s -> %s", assessment_id, filename)
-
-#     except Exception as exc:
-#         logger.exception("PDF generation failed for %s: %s", assessment_id, exc)
-
-# # -------------------------
-# # Applicant endpoints
-# # -------------------------
-# @app.get("/applicant/{assessment_id}/questions")
-# def get_applicant_questions(assessment_id: str):
-#     a = db.get_assessment(assessment_id)
-#     if not a:
-#         raise HTTPException(status_code=404, detail="Assessment not found")
-
-#     max_q = a.get("max_questions", 32)
-#     questions = epq_core.generate_questions(max_q)
-#     return {"assessment_id": assessment_id, "max_questions": max_q, "questions": questions}
-
-
-# @app.post("/applicant/{assessment_id}/submit")
-# async def submit_applicant(assessment_id: str, request: Request, background_tasks: BackgroundTasks):
-#     a = db.get_assessment(assessment_id)
-#     if not a:
-#         raise HTTPException(status_code=404, detail="Assessment not found")
-
-#     body = await request.json()
-#     responses = body.get("responses", {}) or {}
-
-#     # audit trail
-#     try:
-#         db.store_applicant_responses(assessment_id, responses)
-#     except Exception:
-#         logger.exception("Failed to store applicant responses for %s", assessment_id)
-
-#     applicant_result = epq_core.run_applicant_from_responses(responses)
-#     candidate_id = f"A-{assessment_id[:8]}"
-
-#     background_tasks.add_task(
-#         _generate_pdf_background,
-#         assessment_id,
-#         applicant_result,
-#         a.get("environment", "moderate"),
-#         candidate_id,
-#     )
-
-#     return {"status": "processing", "candidate_id": candidate_id}

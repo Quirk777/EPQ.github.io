@@ -5,20 +5,16 @@ import { useSearchParams } from 'next/navigation';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
+  const token = searchParams?.get('token');
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const token = searchParams?.get('token');
-    
     if (!token) {
-      setStatus('error');
-      setMessage('No verification token provided');
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-    fetch(`${apiUrl}/auth/verify-email?token=${token}`)
+    fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`)
       .then(async (res) => {
         const data = await res.json();
         if (res.ok) {
@@ -33,11 +29,22 @@ function VerifyEmailContent() {
           setMessage(data.error || 'Verification failed');
         }
       })
-      .catch((err) => {
+      .catch(() => {
         setStatus('error');
         setMessage('Network error. Please try again.');
       });
-  }, [searchParams]);
+  }, [token]);
+
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Verification Failed</h2>
+          <p className="mt-2 text-gray-600">No verification token provided</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

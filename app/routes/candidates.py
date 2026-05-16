@@ -2,13 +2,9 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-import sqlite3
 import json
 import datetime
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = (PROJECT_ROOT / "epq.db").resolve()
+from app.services import db
 
 router = APIRouter(prefix="/employer/candidates", tags=["candidates"])
 
@@ -16,9 +12,7 @@ def now_iso() -> str:
     return datetime.datetime.utcnow().isoformat()
 
 def conn():
-    con = sqlite3.connect(str(DB_PATH))
-    con.row_factory = sqlite3.Row
-    return con
+    return db.connect()
 
 def get_employer_id(request: Request) -> str:
     try:
@@ -212,16 +206,17 @@ def add_tag(candidate_id: str, tag: Tag, request: Request):
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="Candidate not found")
         
-        # Insert or ignore tag
-        try:
+        # Keep the existing "add tag is idempotent" behavior on SQLite and PostgreSQL.
+        cur.execute(
+            "SELECT 1 FROM candidate_tags WHERE candidate_id = ? AND tag_id = ?",
+            (candidate_id, tag.tag_id),
+        )
+        if not cur.fetchone():
             cur.execute("""
                 INSERT INTO candidate_tags (candidate_id, tag_id)
                 VALUES (?, ?)
             """, (candidate_id, tag.tag_id))
             con.commit()
-        except sqlite3.IntegrityError:
-            # Tag already exists, that's fine
-            pass
     
     return {"success": True, "tag_id": tag.tag_id}
 

@@ -1,28 +1,25 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8001";
+const DEFAULT_BACKEND_URL = process.env.NODE_ENV === "production"
+  ? "http://backend:8001"
+  : "http://127.0.0.1:8001";
 
-function joinUrl(base: string, path: string) {
-  const b = (base || "").replace(/\/+$/, "");
-  const raw = path || "";
-  const p = raw.startsWith("/") ? raw : ("/" + raw);
-  return b + p;
+export function getBackendBaseUrl() {
+  return (
+    process.env.BACKEND_URL ||
+    process.env.API_BASE_URL ||
+    DEFAULT_BACKEND_URL
+  ).replace(/\/+$/, "");
 }
 
 // Raw pass-through proxy: forwards status/body/headers and NEVER throws on non-2xx
 export async function proxyRaw(req: Request, backendPath: string, init?: RequestInit) {
-  const base =
-    (process.env.BACKEND_BASE_URL ||
-      process.env.API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://127.0.0.1:8001").replace(/\/+$/, "");
-
-  const url = base + backendPath;
+  const url = getBackendBaseUrl() + backendPath;
 
   // Forward session cookies so FastAPI's SessionMiddleware can read employer_id
   const inHeaders = req.headers || new Headers();
 
-  const headers = new Headers(init && init.headers ? (init.headers as any) : undefined);
+  const headers = new Headers(init?.headers);
 
   const cookie = inHeaders.get("cookie");
   if (cookie) headers.set("cookie", cookie);
@@ -36,16 +33,16 @@ export async function proxyRaw(req: Request, backendPath: string, init?: Request
   const ua = inHeaders.get("user-agent");
   if (ua) headers.set("user-agent", ua);
 
-  const method = (init && init.method) ? init.method : (req as any).method;
+  const method = init?.method ?? req.method;
 
-  let body: any = undefined;
+  let body: BodyInit | null | undefined = undefined;
   if (init && "body" in init) {
-    body = (init as any).body;
+    body = init.body ?? undefined;
   } else {
     if (method && method !== "GET" && method !== "HEAD") {
       try {
-        body = await (req as any).text();
-      } catch (e) {
+        body = await req.text();
+      } catch {
         body = undefined;
       }
     }

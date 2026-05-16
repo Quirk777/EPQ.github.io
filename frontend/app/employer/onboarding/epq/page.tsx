@@ -40,10 +40,10 @@ export default function EmployerOnboardingEPQ() {
       setErr(null);
       try {
         // Try your backend route first (commonly exists in your project)
-        const res = await fetch("http://127.0.0.1:8001/employer/epq/questions", { credentials: "include" });
+        const res = await fetch("/api/employer/epq/questions", { credentials: "include" });
         if (!res.ok) {
           // fallback to Next proxy if you already have it; if not, it will still show a clean message
-          const res2 = await fetch("http://127.0.0.1:8001/employer/epq/questions", { credentials: "include" });
+          const res2 = await fetch("/api/employer/epq/questions", { credentials: "include" });
           if (!res2.ok) throw new Error("Could not load employer EPQ questions.");
           const data2 = await res2.json();
           setQuestions(Array.isArray(data2?.questions) ? data2.questions : Array.isArray(data2) ? data2 : []);

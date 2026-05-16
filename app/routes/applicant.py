@@ -1,5 +1,6 @@
 ﻿# app/routes/applicant.py
 import uuid
+import os
 from pathlib import Path
 from json import JSONDecodeError
 import re
@@ -15,7 +16,7 @@ from report_generator import generate_pdf_report
 router = APIRouter(prefix="/applicant", tags=["applicant"])
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR = Path(os.environ.get("REPORTS_DIR") or (PROJECT_ROOT / "reports")).expanduser().resolve()
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")

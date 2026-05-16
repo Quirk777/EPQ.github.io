@@ -148,7 +148,7 @@ export default function RoleSetupPage() {
         throw new Error("Created assessment but response did not include assessment_id.");
       }
 
-      const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      const base = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || "");
       const link = `${base}/applicant/${assessmentId}`;
 
       // Show link + copy UI

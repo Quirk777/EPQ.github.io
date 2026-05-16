@@ -138,7 +138,18 @@ async def login(request: Request, response: Response):
     email = (body.get("email") or "").strip().lower()
     password = body.get("password") or ""
 
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="email and password required")
 
+    emp = auth_db.get_employer_by_email(email)
+    if not emp or not emp.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not pwd_context.verify(password, emp["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    request.session["employer_id"] = emp["employer_id"]
+    return {"status": "ok", "employer_id": emp["employer_id"]}
 
 @router.get("/verify-email")
 async def verify_email(req: Request, token: str = None):
@@ -252,47 +263,9 @@ async def get_current_user(req: Request):
         "email": emp["email"],
         "email_verified": bool(employer_data.get("email_verified")) if employer_data else False
     }
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="email and password required")
-
-    emp = auth_db.get_employer_by_email(email)
-    if not emp or not emp.get("password_hash"):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    if not pwd_context.verify(password, emp["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    req.session["employer_id"] = emp["employer_id"]
-    return {"status": "ok", "employer_id": emp["employer_id"]}
 
 @router.post("/logout")
 async def logout(req: Request):
     req.session.clear()
     return {"status": "ok"}
-    # EPQ_WELCOME_EMAIL
-    try:
-        token = upsert_subscription(email)
-        base = (os.getenv("PUBLIC_BASE_URL") or "http://localhost:3000").rstrip("/")
-        unsub = f"{base}/email/unsubscribe?token={token}"
-
-        subject = "Welcome to EPQ 🎉"
-        html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px;">
-          <h2 style="margin: 0 0 12px 0;">Welcome to EPQ</h2>
-          <p style="margin: 0 0 12px 0;">Thanks for signing up. You're officially in.</p>
-          <p style="margin: 0 0 12px 0;">
-            Create an assessment, share your applicant link, and view submissions + PDFs from your dashboard.
-          </p>
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
-          <p style="font-size: 12px; color: #6b7280; margin: 0;">
-            You're receiving this because you signed up for EPQ.
-            <a href="{unsub}">Unsubscribe</a>
-          </p>
-        </div>
-        """
-        text = f"Welcome to EPQ. Unsubscribe: {unsub}"
-
-        send_email_gmail_smtp(email, subject, html, text=text)
-    except Exception:
-        pass
 

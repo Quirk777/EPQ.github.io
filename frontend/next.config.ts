@@ -1,8 +1,10 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    // Use environment variable for API URL, fallback to localhost for development
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001";
+    const isProd = process.env.NODE_ENV === "production";
+    const apiUrl =
+      process.env.BACKEND_URL ||
+      (isProd ? "http://backend:8001" : "http://127.0.0.1:8001");
     
     return [
       // PDF click: map your dashboard URL to the REAL backend PDF route

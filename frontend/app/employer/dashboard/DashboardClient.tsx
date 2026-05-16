@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import * as React from "react";
+import Link from "next/link";
 import LoadingSpinner from "../../_components/LoadingSpinner";
 import Alert from "../../_components/Alert";
 import CompanyLogo from "../../components/CompanyLogo";
@@ -75,7 +76,7 @@ function pickPdf(r: Row) {
   return r.pdf_url || r.pdfUrl || "";
 }
 
-function pickStatus(r: Row) {
+function pickStatus(r: Row): string {
   const s = (r.status || "").toLowerCase();
   if (s.indexOf("ready") !== -1) return "Ready";
   if (s.indexOf("fail") !== -1) return "Failed";
@@ -85,7 +86,7 @@ function pickStatus(r: Row) {
 }
 
 export default function DashboardClient() {
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const [rolesLoading, setRolesLoading] = React.useState(true);
@@ -324,7 +325,7 @@ export default function DashboardClient() {
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 16 }}>
                   Create your first role
                 </div>
-                <a
+                <Link
                   href="/employer/roles/create"
                   style={{
                     padding: "10px 20px",
@@ -341,7 +342,7 @@ export default function DashboardClient() {
                   }}
                 >
                   ➕ Create Role
-                </a>
+                </Link>
               </div>
             ) : (
               <>
@@ -520,7 +521,7 @@ export default function DashboardClient() {
             padding: "16px",
             borderTop: "1px solid rgba(255, 255, 255, 0.1)",
           }}>
-            <a
+            <Link
               href="/employer/roles/create"
               style={{
                 width: "100%",
@@ -547,7 +548,7 @@ export default function DashboardClient() {
               }}
             >
               Create New Role
-            </a>
+            </Link>
           </div>
         </aside>
 

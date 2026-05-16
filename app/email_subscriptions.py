@@ -1,12 +1,12 @@
 ﻿import os
-import sqlite3
 import secrets
 from datetime import datetime
+from app.services import db
 
 DB_PATH = os.getenv("DB_PATH") or os.path.join(os.path.dirname(__file__), "..", "epq.db")
 
 def _conn():
-    return sqlite3.connect(DB_PATH)
+    return db.connect()
 
 def ensure_table():
     with _conn() as con:
@@ -29,7 +29,7 @@ def upsert_subscription(email: str) -> str:
     with _conn() as con:
         row = con.execute("SELECT unsubscribe_token FROM email_subscriptions WHERE email = ?", (email,)).fetchone()
         if row:
-            return row[0]
+            return row["unsubscribe_token"] if isinstance(row, dict) else row[0]
         token = secrets.token_urlsafe(32)
         con.execute("""
           INSERT INTO email_subscriptions (email, is_subscribed, unsubscribe_token, created_at, updated_at)
@@ -54,4 +54,6 @@ def get_email_by_token(token: str) -> str | None:
     ensure_table()
     with _conn() as con:
         row = con.execute("SELECT email FROM email_subscriptions WHERE unsubscribe_token = ?", (token,)).fetchone()
-        return row[0] if row else None
+        if not row:
+            return None
+        return row["email"] if isinstance(row, dict) else row[0]

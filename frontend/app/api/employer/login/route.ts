@@ -1,12 +1,11 @@
 ﻿import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8001";
+import { getBackendBaseUrl } from "../../_proxy";
 
 export async function POST(req: Request) {
   try {
     const body = await req.text();
 
-    const upstream = await fetch(`${BACKEND_URL}/auth/login`, {
+    const upstream = await fetch(`${getBackendBaseUrl()}/auth/login`, {
       method: "POST",
       headers: {
         "content-type": req.headers.get("content-type") ?? "application/json",

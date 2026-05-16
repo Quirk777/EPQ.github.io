@@ -1,33 +1,19 @@
 ﻿import uuid
 import datetime
 import json
-import os
-import sqlite3
 from pathlib import Path
+from app.services import db_adapter
 
-# Set up database path for SQLite (development)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = Path(os.getenv("DB_PATH") or (PROJECT_ROOT / "epq.db")).resolve()
 
-# Database connection with PostgreSQL support for production
+# SQLite path is still exposed for local health checks and legacy scripts.
+DB_PATH = db_adapter.sqlite_path()
+if not db_adapter.is_postgres():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 def connect():
-    """Get database connection - PostgreSQL if DATABASE_URL is set, otherwise SQLite"""
-    database_url = os.environ.get("DATABASE_URL")
-    
-    if database_url:
-        # PostgreSQL connection for production
-        try:
-            import psycopg2
-            from psycopg2.extras import RealDictCursor
-            conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-            return conn
-        except ImportError:
-            raise RuntimeError("psycopg2-binary required for PostgreSQL. Install with: pip install psycopg2-binary")
-    else:
-        # SQLite connection for development (existing code)
-        conn = sqlite3.connect(str(DB_PATH))
-        conn.row_factory = sqlite3.Row
-        return conn
+    """Get a SQLite connection locally or PostgreSQL connection in production."""
+    return db_adapter.connect()
 
 def now_iso() -> str:
     """Return current UTC timestamp in ISO format."""
@@ -37,10 +23,7 @@ def init_db():
     con = connect()
     try:
         cur = con.cursor()
-        
-        # Skip SQLite-specific PRAGMA for PostgreSQL
-        database_url = os.environ.get("DATABASE_URL")
-        if not database_url:  # Only run PRAGMA on SQLite
+        if not db_adapter.is_postgres():
             cur.execute("PRAGMA journal_mode=WAL;")
         
         # Create employers table
@@ -50,6 +33,7 @@ def init_db():
             company_name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            subscription_status TEXT DEFAULT 'trial',
             email_verified INTEGER DEFAULT 0,
             verification_token TEXT,
             verification_token_expires TEXT,
@@ -61,6 +45,7 @@ def init_db():
         
         # Add new columns to existing employers table (PostgreSQL compatible)
         columns_to_add = [
+            ("subscription_status", "TEXT DEFAULT 'trial'"),
             ("email_verified", "INTEGER DEFAULT 0"),
             ("verification_token", "TEXT"),
             ("verification_token_expires", "TEXT"),
@@ -70,21 +55,37 @@ def init_db():
         
         for column_name, column_def in columns_to_add:
             try:
-                if database_url:  # PostgreSQL
-                    cur.execute(f"ALTER TABLE employers ADD COLUMN IF NOT EXISTS {column_name} {column_def}")
-                else:  # SQLite
-                    cur.execute(f"ALTER TABLE employers ADD COLUMN {column_name} {column_def}")
+                cur.execute(f"ALTER TABLE employers ADD COLUMN {column_name} {column_def}")
             except Exception:
+                try:
+                    con.rollback()
+                except Exception:
+                    pass
                 pass  # Column already exists
         
+        # Create roles table used by the employer role setup flow.
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS roles (
+            role_id TEXT PRIMARY KEY,
+            employer_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (employer_id) REFERENCES employers(employer_id)
+        )
+        """)
+
         # Create assessments table
         cur.execute("""
         CREATE TABLE IF NOT EXISTS assessments (
             assessment_id TEXT PRIMARY KEY,
             employer_id TEXT NOT NULL,
-            role_id TEXT NOT NULL,
+            role_id TEXT,
             environment TEXT NOT NULL,
             max_questions INTEGER DEFAULT 60,
+            status TEXT NOT NULL DEFAULT 'active',
+            pdf_filename TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             created_utc TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (employer_id) REFERENCES employers(employer_id)
         )
@@ -119,8 +120,7 @@ def init_db():
         """)
         
         # Create candidate notes table
-        database_url = os.environ.get("DATABASE_URL")
-        note_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        note_id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS candidate_notes (
             note_id {note_id_type},
@@ -133,7 +133,7 @@ def init_db():
         """)
         
         # Create candidate feedback table
-        feedback_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        feedback_id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS candidate_feedback (
             feedback_id {feedback_id_type},
@@ -161,7 +161,7 @@ def init_db():
         """)
         
         # Create webhook_logs table
-        log_id_type = "SERIAL PRIMARY KEY" if database_url else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        log_id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS webhook_logs (
             log_id {log_id_type},
@@ -173,6 +173,42 @@ def init_db():
             error TEXT,
             created_utc TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (webhook_id) REFERENCES webhooks(webhook_id) ON DELETE CASCADE
+        )
+        """)
+
+        # Branding tables support tenant logo uploads and visual settings.
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS company_branding (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employer_id TEXT NOT NULL UNIQUE,
+            logo_original TEXT,
+            logo_transparent TEXT,
+            logo_monochrome TEXT,
+            logo_favicon TEXT,
+            active_logo_variant TEXT DEFAULT 'transparent',
+            original_filename TEXT,
+            mime_type TEXT,
+            file_size_bytes INTEGER,
+            upload_date TEXT DEFAULT CURRENT_TIMESTAMP,
+            accent_color TEXT,
+            use_accent_color INTEGER DEFAULT 0,
+            show_watermark INTEGER DEFAULT 0,
+            watermark_opacity REAL DEFAULT 0.03,
+            watermark_position TEXT DEFAULT 'center',
+            updated_by TEXT,
+            updated_at TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS branding_audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employer_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            changed_fields TEXT,
+            user_email TEXT,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT
         )
         """)
         
@@ -257,8 +293,11 @@ def list_applicants_for_assessment(assessment_id: str):
             SELECT
               candidate_id,
               assessment_id,
+              applicant_name,
+              applicant_email,
               applicant_name AS name,
               applicant_email AS email,
+              pdf_status,
               pdf_status AS status,
               pdf_filename,
               pdf_error,
@@ -271,6 +310,30 @@ def list_applicants_for_assessment(assessment_id: str):
         )
         rows = cur.fetchall()
         return [dict(r) for r in rows]
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
+
+
+def create_assessment(employer_id: str, environment: str, max_questions: int, role_id: str = "") -> str:
+    """Create an assessment row and return its assessment_id."""
+    assessment_id = uuid.uuid4().hex
+    created = now_iso()
+    con = connect()
+    try:
+        cur = con.cursor()
+        cur.execute(
+            """
+            INSERT INTO assessments
+              (assessment_id, employer_id, environment, max_questions, status, pdf_filename, created_at, created_utc, role_id)
+            VALUES (?, ?, ?, ?, 'active', '', ?, ?, ?)
+            """,
+            (assessment_id, employer_id, environment, int(max_questions or 32), created, created, role_id or ""),
+        )
+        con.commit()
+        return assessment_id
     finally:
         try:
             con.close()
@@ -458,378 +521,56 @@ def set_applicant_pdf_failed(candidate_id: str, error_message: str):
 # -------------------------
 # Added submission helper (auto-patch)
 # -------------------------
-def create_applicant_submission(
-    assessment_id: str,
-    applicant_name: str,
-    applicant_email: str,
-    # What app/routes/applicant.py sends:
-    responses=None,
-    score=None,
-    # Optional legacy params:
-    responses_json: str = "",
-    score_json: str = "",
-    candidate_id: str = "",
-    pdf_status: str = "processing",
-    pdf_filename: str = "",
-    pdf_error: str = "",
-    submitted_utc: str = "",
-    **kwargs,
-):
-    """
-    Insert into applicants table.
-
-    Works with your schema:
-      applicants(candidate_id, assessment_id, applicant_name, applicant_email,
-                 responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-
-    Accepts either:
-      - responses=<dict>, score=<dict>
-      - responses_json="<json>", score_json="<json>"
-    """
-    import datetime, uuid, json
-
-    name = (applicant_name or "").strip()
-    email = (applicant_email or "").strip().lower()
-
-    if not assessment_id:
-        raise ValueError("assessment_id required")
-    if not name:
-        raise ValueError("applicant_name required")
-    if not email:
-        raise ValueError("applicant_email required")
-
-    # Allow alternate keyword names without exploding
-    if responses is None:
-        responses = kwargs.get("response", None)
-    if score is None:
-        score = kwargs.get("applicant_result", None)
-
-    # Normalize to JSON strings
-    if not responses_json:
-        try:
-            responses_json = json.dumps(responses or {}, ensure_ascii=False)
-        except Exception:
-            responses_json = "{}"
-
-    if not score_json:
-        try:
-            score_json = json.dumps(score or {}, ensure_ascii=False)
-        except Exception:
-            score_json = "{}"
-
-    if not candidate_id:
-        candidate_id = "A-" + uuid.uuid4().hex[:12]
-
-    if not submitted_utc:
-        submitted_utc = datetime.datetime.utcnow().isoformat()
-
-    con = connect()
-    try:
-        cur = con.cursor()
-        cur.execute(
-            """
-            INSERT INTO applicants
-              (candidate_id, assessment_id, applicant_name, applicant_email,
-               responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                candidate_id,
-                assessment_id,
-                name,
-                email,
-                responses_json or "",
-                score_json or "",
-                pdf_status or "processing",
-                pdf_filename or "",
-                pdf_error or "",
-                submitted_utc,
-            ),
-        )
-        con.commit()
-        return {
-            "candidate_id": candidate_id,
-            "assessment_id": assessment_id,
-            "applicant_name": name,
-            "applicant_email": email,
-            "pdf_status": pdf_status or "processing",
-            "submitted_utc": submitted_utc,
-        }
-    finally:
-        try:
-            con.close()
-        except Exception:
-            pass
-def create_applicant_submission(
-    assessment_id: str,
-    applicant_name: str,
-    applicant_email: str,
-    # New-style (what your applicant route is sending)
-    responses=None,
-    score=None,
-    # Old-style (string JSON)
-    responses_json: str = "",
-    score_json: str = "",
-    candidate_id: str = "",
-    pdf_status: str = "processing",
-    pdf_filename: str = "",
-    pdf_error: str = "",
-    submitted_utc: str = "",
-    **kwargs,
-):
-    """
-    Insert applicant submission into the applicants table.
-
-    Supports BOTH calling styles:
-      - create_applicant_submission(..., responses=<dict>, score=<dict>)
-      - create_applicant_submission(..., responses_json="<json>", score_json="<json>")
-
-    Your schema:
-      applicants(candidate_id, assessment_id, applicant_name, applicant_email,
-                 responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-    """
-    import datetime, uuid, json
-
-    name = (applicant_name or "").strip()
-    email = (applicant_email or "").strip().lower()
-
-    if not assessment_id:
-        raise ValueError("assessment_id required")
-    if not name:
-        raise ValueError("applicant_name required")
-    if not email:
-        raise ValueError("applicant_email required")
-
-    # Accept alternate param names if someone calls it differently
-    if responses is None and "response" in kwargs:
-        responses = kwargs.get("response")
-    if score is None and "applicant_result" in kwargs:
-        score = kwargs.get("applicant_result")
-
-    # Normalize to JSON strings for DB storage
-    if not responses_json:
-        try:
-            responses_json = json.dumps(responses or {}, ensure_ascii=False)
-        except Exception:
-            responses_json = "{}"
-
-    if not score_json:
-        try:
-            score_json = json.dumps(score or {}, ensure_ascii=False)
-        except Exception:
-            score_json = "{}"
-
-    if not candidate_id:
-        candidate_id = "A-" + uuid.uuid4().hex[:12]
-
-    if not submitted_utc:
-        submitted_utc = datetime.datetime.utcnow().isoformat()
-
-    con = connect()
-    try:
-        cur = con.cursor()
-        cur.execute(
-            """
-            INSERT INTO applicants
-              (candidate_id, assessment_id, applicant_name, applicant_email,
-               responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                candidate_id,
-                assessment_id,
-                name,
-                email,
-                responses_json or "",
-                score_json or "",
-                pdf_status or "processing",
-                pdf_filename or "",
-                pdf_error or "",
-                submitted_utc,
-            ),
-        )
-        con.commit()
-        return {
-            "candidate_id": candidate_id,
-            "assessment_id": assessment_id,
-            "applicant_name": name,
-            "applicant_email": email,
-            "pdf_status": pdf_status or "processing",
-            "submitted_utc": submitted_utc,
-        }
-    finally:
-        try:
-            con.close()
-        except Exception:
-            pass
 
 def create_applicant_submission(
     assessment_id: str,
     applicant_name: str,
     applicant_email: str,
-    responses_json: str,
-    score_json: str = "",
-    candidate_id: str = "",
-    pdf_status: str = "processing",
-    pdf_filename: str = "",
-    pdf_error: str = "",
-    submitted_utc: str = "",
+    responses: dict,
+    candidate_id: str | None = None,
+    score: dict | None = None,
 ):
-    """
-    Insert a submission into the applicants table.
-    This matches the schema you have:
-      applicants(candidate_id, assessment_id, applicant_name, applicant_email,
-                 responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-    """
-    import datetime, uuid
+    """Store an applicant submission without changing scoring/business logic."""
+    cid = candidate_id or ("A-" + assessment_id[:8] + "-" + uuid.uuid4().hex[:6])
+    create_applicant(
+        candidate_id=cid,
+        assessment_id=assessment_id,
+        applicant_name=applicant_name,
+        applicant_email=applicant_email,
+        responses_json=json.dumps(responses or {}),
+        score_json=json.dumps(score or {}),
+        pdf_status="processing",
+        submitted_utc=now_iso(),
+    )
+    return cid
 
-    name = (applicant_name or "").strip()
-    email = (applicant_email or "").strip().lower()
 
-    if not assessment_id:
-        raise ValueError("assessment_id required")
-    if not name:
-        raise ValueError("applicant_name required")
-    if not email:
-        raise ValueError("applicant_email required")
-
-    if not candidate_id:
-        candidate_id = "A-" + uuid.uuid4().hex[:12]
-
-    if not submitted_utc:
-        submitted_utc = datetime.datetime.utcnow().isoformat()
-
+def list_applicant_submissions_for_employer(employer_id: str):
+    """List all applicant submissions for one employer across assessments."""
     con = connect()
     try:
         cur = con.cursor()
         cur.execute(
             """
-            INSERT INTO applicants
-              (candidate_id, assessment_id, applicant_name, applicant_email,
-               responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            SELECT
+              a.candidate_id,
+              a.assessment_id,
+              a.applicant_name,
+              a.applicant_email,
+              a.submitted_utc,
+              a.pdf_status,
+              a.pdf_filename,
+              a.pdf_error,
+              s.environment,
+              s.max_questions
+            FROM applicants a
+            JOIN assessments s ON s.assessment_id = a.assessment_id
+            WHERE s.employer_id = ?
+            ORDER BY COALESCE(a.submitted_utc, '') DESC
             """,
-            (
-                candidate_id,
-                assessment_id,
-                name,
-                email,
-                responses_json or "",
-                score_json or "",
-                pdf_status or "processing",
-                pdf_filename or "",
-                pdf_error or "",
-                submitted_utc,
-            ),
+            (employer_id,),
         )
-        con.commit()
-        return {
-            "candidate_id": candidate_id,
-            "assessment_id": assessment_id,
-            "applicant_name": name,
-            "applicant_email": email,
-            "pdf_status": pdf_status or "processing",
-            "submitted_utc": submitted_utc,
-        }
-    finally:
-        try:
-            con.close()
-        except Exception:
-            pass
-
-
-
-
-# ============================================================
-# EPQ_FINAL_OVERRIDE_CREATE_APPLICANT_SUBMISSION
-# Last-definition wins in Python modules. This override ensures
-# applicant.py can call create_applicant_submission(responses=..., score=...)
-# without keyword-arg errors, regardless of earlier definitions.
-# ============================================================
-def create_applicant_submission(
-    assessment_id: str,
-    applicant_name: str,
-    applicant_email: str,
-    responses=None,
-    score=None,
-    responses_json: str = "",
-    score_json: str = "",
-    candidate_id: str = "",
-    pdf_status: str = "processing",
-    pdf_filename: str = "",
-    pdf_error: str = "",
-    submitted_utc: str = "",
-    **kwargs,
-):
-    import datetime, uuid, json
-
-    name = (applicant_name or "").strip()
-    email = (applicant_email or "").strip().lower()
-
-    if not assessment_id:
-        raise ValueError("assessment_id required")
-    if not name:
-        raise ValueError("applicant_name required")
-    if not email:
-        raise ValueError("applicant_email required")
-
-    # Allow alternate keyword names without exploding
-    if responses is None:
-        responses = kwargs.get("response", None)
-    if score is None:
-        score = kwargs.get("applicant_result", None)
-
-    # Normalize objects to JSON strings for DB
-    if not responses_json:
-        try:
-            responses_json = json.dumps(responses or {}, ensure_ascii=False)
-        except Exception:
-            responses_json = "{}"
-
-    if not score_json:
-        try:
-            score_json = json.dumps(score or {}, ensure_ascii=False)
-        except Exception:
-            score_json = "{}"
-
-    if not candidate_id:
-        candidate_id = "A-" + uuid.uuid4().hex[:12]
-
-    if not submitted_utc:
-        submitted_utc = datetime.datetime.utcnow().isoformat()
-
-    con = connect()
-    try:
-        cur = con.cursor()
-        cur.execute(
-            """
-            INSERT INTO applicants
-              (candidate_id, assessment_id, applicant_name, applicant_email,
-               responses_json, score_json, pdf_status, pdf_filename, pdf_error, submitted_utc)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                candidate_id,
-                assessment_id,
-                name,
-                email,
-                responses_json or "",
-                score_json or "",
-                pdf_status or "processing",
-                pdf_filename or "",
-                pdf_error or "",
-                submitted_utc,
-            ),
-        )
-        con.commit()
-        return {
-            "candidate_id": candidate_id,
-            "assessment_id": assessment_id,
-            "applicant_name": name,
-            "applicant_email": email,
-            "pdf_status": pdf_status or "processing",
-            "submitted_utc": submitted_utc,
-        }
+        return [dict(r) for r in cur.fetchall()]
     finally:
         try:
             con.close()
@@ -961,3 +702,15 @@ def get_current_user_from_session(request: Request):
 def get_db():
     """Get database connection"""
     return connect()
+
+def db_health():
+    """Health check for the main database"""
+    try:
+        con = connect()
+        cur = con.cursor()
+        cur.execute("SELECT 1")
+        result = cur.fetchone()
+        con.close()
+        return {"status": "healthy", "database": db_adapter.database_label(), "db_path": str(DB_PATH) if not db_adapter.is_postgres() else ""}
+    except Exception as e:
+        return {"status": "unhealthy", "database": db_adapter.database_label(), "db_path": str(DB_PATH) if not db_adapter.is_postgres() else "", "error": str(e)}

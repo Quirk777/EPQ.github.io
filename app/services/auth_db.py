@@ -1,18 +1,18 @@
 import os
-import sqlite3
 import secrets
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from app.services import db_adapter
 
 # Single source of truth for sqlite DB path:
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = Path(os.getenv("DB_PATH") or (PROJECT_ROOT / "epq.db")).resolve()
+DB_PATH = db_adapter.sqlite_path()
+if not db_adapter.is_postgres():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def connect():
-    con = sqlite3.connect(str(DB_PATH))
-    con.row_factory = sqlite3.Row
-    return con
+    return db_adapter.connect()
 
 def _conn():
     """Alias for connect() for backwards compatibility"""
@@ -36,7 +36,7 @@ def ensure_auth_columns():
         try:
             cur.execute(f"ALTER TABLE employers ADD COLUMN {column_name} {column_type}")
             con.commit()
-        except sqlite3.OperationalError:
+        except Exception:
             pass  # Column already exists
     
     con.close()
@@ -179,3 +179,15 @@ def reset_password_with_token(token: str, new_password_hash: str) -> bool:
     con.commit()
     con.close()
     return True
+
+def db_health():
+    """Health check for the auth database"""
+    try:
+        con = _conn()
+        cur = con.cursor()
+        cur.execute("SELECT 1")
+        result = cur.fetchone()
+        con.close()
+        return {"status": "healthy", "auth_db": db_adapter.database_label()}
+    except Exception as e:
+        return {"status": "unhealthy", "auth_db": db_adapter.database_label(), "error": str(e)}

@@ -22,7 +22,11 @@ class EmailService:
         self.gmail_user = os.getenv("GMAIL_USER", "").strip()
         self.gmail_password = os.getenv("GMAIL_APP_PASSWORD", "").strip()
         self.from_name = os.getenv("GMAIL_FROM_NAME", "EPQ").strip()
-        self.public_base_url = os.getenv("PUBLIC_BASE_URL", "http://localhost:3000").rstrip("/")
+        self.public_base_url = (
+            os.getenv("PUBLIC_BASE_URL")
+            or os.getenv("FRONTEND_URL")
+            or "http://127.0.0.1:3000"
+        ).rstrip("/")
         
         # Check if email is configured
         self.is_configured = bool(self.gmail_user and self.gmail_password)

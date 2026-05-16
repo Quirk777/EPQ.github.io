@@ -75,8 +75,10 @@ async def upload_logo(request: Request, logo: UploadFile = File(...)):
     
     # Save to database
     conn = db.connect()
+    # Keep one branding row per employer across SQLite and PostgreSQL.
+    conn.execute("DELETE FROM company_branding WHERE employer_id = ?", (employer_id,))
     conn.execute("""
-        INSERT OR REPLACE INTO company_branding 
+        INSERT INTO company_branding 
         (employer_id, logo_original, logo_transparent, logo_monochrome, logo_favicon,
          original_filename, mime_type, file_size_bytes, accent_color, updated_by, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

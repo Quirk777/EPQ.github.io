@@ -7,7 +7,7 @@ type EPQChoiceObj = { text?: string; label?: string; score?: number; value?: num
 type EPQChoice = string | EPQChoiceObj;
 type EPQQuestion = { id: string; text: string; choices: EPQChoice[] };
 
-async function postJson(path: string, body: any) {
+async function postJson(path: string, body: unknown) {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -15,9 +15,9 @@ async function postJson(path: string, body: any) {
     body: JSON.stringify(body),
   });
 
-  let data: any = {};
+  let data: Record<string, unknown> = {};
   try {
-    data = await res.json();
+    data = (await res.json()) as Record<string, unknown>;
   } catch {
     // ignore
   }
@@ -39,7 +39,7 @@ export default function EmployerEPQPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://127.0.0.1:8001/employer/epq/questions", { credentials: "include" });
+      const res = await fetch("/api/employer/epq/questions", { credentials: "include" });
       const data = await res.json();
       const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
       setQs(items);
@@ -65,7 +65,9 @@ export default function EmployerEPQPage() {
       }
 
       if (!res.ok) {
-        throw new Error(data?.detail ?? data?.message ?? `Create assessment failed (${res.status})`);
+        const detail = typeof data.detail === "string" ? data.detail : "";
+        const message = typeof data.message === "string" ? data.message : "";
+        throw new Error(detail || message || `Create assessment failed (${res.status})`);
       }
 
       // Prefer employer dashboard route, fall back to /dashboard

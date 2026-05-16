@@ -1,6 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8001";
+import { getBackendBaseUrl } from "../../_proxy";
 
 function inferCompanyName(email: string): string {
   const domain = (email.split("@")[1] || "").trim();
@@ -23,7 +22,7 @@ export async function POST(req: Request) {
       company_name: inferCompanyName(email),
     };
 
-    const upstream = await fetch(`${BACKEND_URL}/auth/register`, {
+    const upstream = await fetch(`${getBackendBaseUrl()}/auth/register`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

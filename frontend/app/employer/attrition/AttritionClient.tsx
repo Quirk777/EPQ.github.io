@@ -3,16 +3,10 @@
 import { useState, useEffect } from 'react';
 import {
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
   Users,
-  Clock,
-  Briefcase,
   Target,
   Shield,
-  Zap,
   CheckCircle,
-  XCircle,
   Activity,
   BarChart3
 } from 'lucide-react';
@@ -40,7 +34,7 @@ interface RiskFactor {
   factor: string;
   severity: string;
   description: string;
-  value: any;
+  value: string | number | boolean;
 }
 
 interface Candidate {
@@ -49,9 +43,24 @@ interface Candidate {
   email: string;
 }
 
+interface Statistics {
+  total_assessed: number;
+  average_risk_score: number;
+  high_risk_count: number;
+  risk_distribution?: {
+    low?: number;
+    medium?: number;
+    high?: number;
+  };
+  top_risk_factors?: Array<{
+    factor: string;
+    count: number;
+  }>;
+}
+
 export default function AttritionClient() {
   const [highRiskCandidates, setHighRiskCandidates] = useState<RiskCandidate[]>([]);
-  const [statistics, setStatistics] = useState<any>(null);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<RiskCandidate | null>(null);
   const [detailedAssessment, setDetailedAssessment] = useState<RiskAssessment | null>(null);
   const [loading, setLoading] = useState(false);
@@ -415,7 +424,7 @@ export default function AttritionClient() {
         <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Most Common Risk Factors</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {statistics.top_risk_factors.map((item: any, idx: number) => (
+            {statistics.top_risk_factors.map((item: { factor: string; count: number }, idx: number) => (
               <div key={idx} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700 capitalize">

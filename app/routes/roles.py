@@ -1,11 +1,7 @@
-﻿from fastapi import APIRouter, Request, HTTPException
+﻿from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel
-import sqlite3, uuid, datetime
-from pathlib import Path
-
-# project root / epq.db
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = (PROJECT_ROOT / "epq.db").resolve()
+import uuid, datetime
+from app.services import db
 
 router = APIRouter(prefix="/api/employer/roles", tags=["roles"])
 
@@ -13,23 +9,10 @@ def now_iso() -> str:
     return datetime.datetime.utcnow().isoformat()
 
 def conn():
-    con = sqlite3.connect(str(DB_PATH))
-    con.row_factory = sqlite3.Row
-    return con
+    return db.connect()
 
-def get_employer_id(request: Request) -> str:
-    # session auth (your app uses this pattern)
-    try:
-        if hasattr(request, "session") and request.session.get("employer_id"):
-            return str(request.session["employer_id"])
-    except Exception:
-        pass
-    try:
-        if hasattr(request, "state") and getattr(request.state, "employer_id", None):
-            return str(request.state.employer_id)
-    except Exception:
-        pass
-    raise HTTPException(status_code=401, detail="Not authenticated")
+# Import the proper authentication dependency
+from app.auth import require_employer
 
 class RoleCreate(BaseModel):
     name: str
@@ -39,8 +22,8 @@ class RoleAssessmentCreate(BaseModel):
     max_questions: int | None = 20
 
 @router.get("")
-def list_roles(request: Request):
-    employer_id = get_employer_id(request)
+def list_roles(emp=Depends(require_employer)):
+    employer_id = emp.get("employer_id")
     with conn() as con:
         cur = con.cursor()
         # include active assessment_id so UI can show link + configured status
@@ -71,8 +54,8 @@ def list_roles(request: Request):
     return out
 
 @router.post("")
-def create_role(payload: RoleCreate, request: Request):
-    employer_id = get_employer_id(request)
+def create_role(payload: RoleCreate, emp=Depends(require_employer)):
+    employer_id = emp.get("employer_id")
     name = (payload.name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Role name is required")
@@ -90,8 +73,8 @@ def create_role(payload: RoleCreate, request: Request):
     return {"role_id": role_id, "name": name, "status": "active"}
 
 @router.post("/{role_id}/assessment")
-def create_or_update_role_assessment(role_id: str, payload: RoleAssessmentCreate, request: Request):
-    employer_id = get_employer_id(request)
+def create_or_update_role_assessment(role_id: str, payload: RoleAssessmentCreate, emp=Depends(require_employer)):
+    employer_id = emp.get("employer_id")
     environment = (payload.environment or "moderate").strip() or "moderate"
     max_questions = int(payload.max_questions or 20)
 
@@ -133,8 +116,8 @@ def create_or_update_role_assessment(role_id: str, payload: RoleAssessmentCreate
     return {"role_id": role_id, "assessment_id": assessment_id, "environment": environment, "max_questions": max_questions}
 
 @router.get("/{role_id}/submissions")
-def role_submissions(role_id: str, request: Request):
-    employer_id = get_employer_id(request)
+def role_submissions(role_id: str, emp=Depends(require_employer)):
+    employer_id = emp.get("employer_id")
 
     with conn() as con:
         cur = con.cursor()
@@ -209,8 +192,8 @@ def role_submissions(role_id: str, request: Request):
 
     return out
 @router.delete("/{role_id}")
-def delete_role(role_id: str, request: Request):
-    employer_id = get_employer_id(request)
+def delete_role(role_id: str, emp=Depends(require_employer)):
+    employer_id = emp.get("employer_id")
 
     with conn() as con:
         cur = con.cursor()
@@ -241,4 +224,3 @@ def delete_role(role_id: str, request: Request):
         con.commit()
 
     return {"status": "ok", "role_id": role_id}
-

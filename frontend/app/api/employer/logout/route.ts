@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8001";
+import { getBackendBaseUrl } from "../../_proxy";
 
 export async function POST(req: Request) {
   try {
-    const upstream = await fetch(`${BACKEND_URL}/auth/logout`, {
+    const upstream = await fetch(`${getBackendBaseUrl()}/auth/logout`, {
       method: "POST",
       headers: {
         cookie: req.headers.get("cookie") ?? "",

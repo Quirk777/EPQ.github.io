@@ -116,12 +116,12 @@ textarea:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.5);
+  background: var(--border-strong);
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.8);
+  background: var(--text-tertiary);
 }
 
 @media (max-width: 760px) {
@@ -183,7 +183,7 @@ textarea:focus-visible {
 
 /* Animated gradient backgrounds */
 .gradient-animated {
-  background: linear-gradient(270deg, #6366f1, #8b5cf6, #ec4899, #6366f1);
+  background: linear-gradient(270deg, var(--accent-blue), var(--accent-mint), var(--accent-lavender), var(--accent-blue));
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
@@ -204,7 +204,7 @@ textarea:focus-visible {
 
 /* Neon glow effect */
 .neon-glow {
-  animation: glow 2s ease-in-out infinite;
+  animation: none;
 }
 
 /* Fade in animations for content */

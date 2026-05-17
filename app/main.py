@@ -1,5 +1,6 @@
 # app/main.py
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi import Header
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,8 +63,14 @@ if session_same_site not in {"lax", "strict", "none"}:
 if session_same_site == "none" and not session_cookie_secure:
     raise RuntimeError("SESSION_SAME_SITE=none requires HTTPS_ONLY_COOKIES=true")
 
-trusted_proxy_ips = os.environ.get("TRUSTED_PROXY_IPS", "*")
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=trusted_proxy_ips)
+trusted_proxy_ips = os.environ.get("TRUSTED_PROXY_IPS")
+if IS_PRODUCTION and (not trusted_proxy_ips or trusted_proxy_ips.strip() == "*"):
+    raise RuntimeError(
+        "CRITICAL: Production requires TRUSTED_PROXY_IPS to be explicitly set "
+        "to your reverse proxy IP(s) or CIDR(s). Do not use '*'."
+    )
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=(trusted_proxy_ips or "*"))
 
 # CORS configuration
 cors_origins_env = os.environ.get("CORS_ALLOW_ORIGINS", "").strip()
@@ -104,7 +111,8 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(debug_router)
+if not IS_PRODUCTION:
+    app.include_router(debug_router)
 app.include_router(auth_router)
 app.include_router(employer_router)
 app.include_router(applicant_router)
@@ -268,8 +276,14 @@ def healthz():
     }
 
 @app.get("/health/email")
-def health_email():
+def health_email(x_health_token: str | None = Header(default=None)):
     """Production email configuration health check - admin only"""
+    if IS_PRODUCTION:
+        expected = os.environ.get("HEALTH_EMAIL_TOKEN")
+        if not expected or x_health_token != expected:
+            # Hide existence to reduce probing.
+            raise HTTPException(status_code=404, detail="Not Found")
+
     try:
         from app.email_gmail import _env
         gmail_user = _env("GMAIL_USER")

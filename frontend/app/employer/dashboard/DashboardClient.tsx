@@ -93,6 +93,9 @@ export default function DashboardClient() {
   const [rolesError, setRolesError] = React.useState<string | null>(null);
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [roleId, setRoleId] = React.useState<string>("");
+  const [verificationRequired, setVerificationRequired] = React.useState(false);
+  const [resendMessage, setResendMessage] = React.useState<string | null>(null);
+  const [resendingVerification, setResendingVerification] = React.useState(false);
 
   const [rows, setRows] = React.useState<Row[]>([]);
   
@@ -124,8 +127,16 @@ export default function DashboardClient() {
       });
       const data = await safeJson(res);
       if (!res.ok) {
+        const detail = data && typeof data === "object" && "detail" in data ? (data as { detail?: unknown }).detail : null;
+        const code = detail && typeof detail === "object" && "code" in detail ? (detail as { code?: string }).code : "";
+        if (res.status === 403 && code === "EMAIL_VERIFICATION_REQUIRED") {
+          setVerificationRequired(true);
+          setRoles([]);
+          return;
+        }
         throw new Error(data && data.detail ? String(data.detail) : "Failed to load roles");
       }
+      setVerificationRequired(false);
       const list = normalizeRoles(data);
       setRoles(list);
 
@@ -145,6 +156,27 @@ export default function DashboardClient() {
       setRolesError(err && err.message ? String(err.message) : "Failed to load roles");
     } finally {
       setRolesLoading(false);
+    }
+  }
+
+  async function resendVerificationEmail() {
+    setResendingVerification(true);
+    setResendMessage(null);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.detail || "Could not resend verification email");
+      }
+      setResendMessage(data?.message || "Verification email sent. Please check your inbox.");
+    } catch (e: unknown) {
+      const err = e as Error;
+      setResendMessage(err?.message || "Could not resend verification email");
+    } finally {
+      setResendingVerification(false);
     }
   }
 
@@ -237,6 +269,70 @@ export default function DashboardClient() {
     Failed: { bg: "rgba(196, 137, 137, 0.15)", border: "var(--color-error)", icon: "" }
   };
 
+  if (verificationRequired) {
+    return (
+      <main style={{
+        minHeight: "100vh",
+        background: "var(--surface-0)",
+        color: "var(--text-primary)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }} className="texture-background">
+        <section style={{
+          width: "100%",
+          maxWidth: 520,
+          background: "var(--surface-1)",
+          border: "1px solid var(--border-default)",
+          borderRadius: 8,
+          padding: 24,
+          boxShadow: "var(--shadow-lg)",
+        }}>
+          <h1 style={{
+            margin: "0 0 8px 0",
+            fontSize: 24,
+            color: "var(--text-primary)",
+          }}>
+            Verify your email
+          </h1>
+          <p style={{
+            margin: "0 0 20px 0",
+            color: "var(--text-secondary)",
+            lineHeight: 1.5,
+          }}>
+            Check your inbox for the verification link before opening the employer dashboard.
+          </p>
+          <button
+            type="button"
+            onClick={resendVerificationEmail}
+            disabled={resendingVerification}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 6,
+              border: "1px solid var(--border-default)",
+              background: "var(--surface-2)",
+              color: "var(--text-primary)",
+              cursor: resendingVerification ? "not-allowed" : "pointer",
+              fontWeight: 700,
+            }}
+          >
+            {resendingVerification ? "Sending..." : "Resend verification email"}
+          </button>
+          {resendMessage ? (
+            <p style={{
+              margin: "16px 0 0 0",
+              color: "var(--text-secondary)",
+              fontSize: 14,
+            }}>
+              {resendMessage}
+            </p>
+          ) : null}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main style={{
       minHeight: "100vh",
@@ -248,14 +344,14 @@ export default function DashboardClient() {
       
 
       {/* Main Layout Container with Sidebar */}
-      <div style={{
+      <div className="epq-dashboard-layout" style={{
         display: "flex",
         minHeight: "100vh",
         position: "relative" as const,
         zIndex: 1,
       }}>
         {/* Left Sidebar - Roles */}
-        <aside style={{
+        <aside className="epq-dashboard-sidebar" style={{
           width: 320,
           flexShrink: 0,
           background: "var(--surface-1)",
@@ -320,7 +416,7 @@ export default function DashboardClient() {
                 textAlign: "center",
                 padding: "32px 16px",
               }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 12 }}>Empty</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", marginBottom: 8 }}>No roles yet</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 16 }}>
                   Create your first role
@@ -341,7 +437,7 @@ export default function DashboardClient() {
                     boxShadow: "0 4px 20px rgba(99,102,241,0.3)",
                   }}
                 >
-                  ➕ Create Role
+                  Create Role
                 </Link>
               </div>
             ) : (
@@ -553,7 +649,7 @@ export default function DashboardClient() {
         </aside>
 
         {/* Right Content Area */}
-        <div style={{
+        <div className="epq-dashboard-panel" style={{
           flex: 1,
           display: "flex",
           flexDirection: "column" as const,
@@ -687,7 +783,7 @@ export default function DashboardClient() {
           </header>
 
           {/* Main Content Area - Submissions */}
-          <div style={{
+          <div className="epq-dashboard-main" style={{
             flex: 1,
             overflowY: "auto" as const,
             padding: "var(--space-8)",
@@ -772,7 +868,7 @@ export default function DashboardClient() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <div style={{ 
+        <div className="epq-table-scroll" style={{
           marginTop: "var(--space-4)", 
           border: "1px solid var(--border-subtle)", 
           borderRadius: 8, 
@@ -910,4 +1006,3 @@ export default function DashboardClient() {
     </main>
   );
 }
-

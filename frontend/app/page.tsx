@@ -11,12 +11,12 @@ export default function HomePage() {
 
       {/* Navigation */}
       <div style={s.navWrap}>
-        <div style={s.container}>
+        <div style={s.container} className="epq-home-container">
           <nav style={s.nav}>
             <Link href="/" style={s.brand}>
               <CompanyLogo size="md" variant="transparent" />
             </Link>
-            <div style={s.navLinks}>
+            <div style={s.navLinks} className="epq-home-nav-links">
               <Link href="#platform" style={s.link}>Platform</Link>
               <Link href="#roadmap" style={s.link}>Roadmap</Link>
               <Link href="/employer/signup" style={s.linkPrimary}>Start Trial</Link>
@@ -27,7 +27,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <div style={s.container}>
+      <div style={s.container} className="epq-home-container">
         <section style={s.hero}>
           <div style={s.heroContent}>
             <h1 style={s.heroTitle}>
@@ -37,7 +37,7 @@ export default function HomePage() {
               Evaluate cognitive ability, personality traits, and role alignment through validated instruments.
               Generate structured reports for hiring decisions.
             </p>
-            <div style={s.heroActions}>
+            <div style={s.heroActions} className="epq-home-actions">
               <Link href="/employer/signup" style={s.btnPrimary}>Start Trial</Link>
               <Link href="#platform" style={s.btnSecondary}>Documentation</Link>
             </div>
@@ -67,7 +67,7 @@ export default function HomePage() {
             <p style={s.sectionSub}>Replace manual evaluation with validated psychometric instruments</p>
           </div>
 
-          <div style={s.grid}>
+          <div style={s.grid} className="epq-home-grid">
             <div style={s.card} className="texture-surface-2">
               <div style={s.cardHeader}>
                 <div style={s.cardLabel}>Screening</div>
@@ -147,7 +147,7 @@ export default function HomePage() {
           </div>
 
           <div style={s.timeline}>
-            <div style={s.timelineItem}>
+            <div style={s.timelineItem} className="epq-home-timeline-item">
               <div style={s.timelinePeriod}>Q2 2026</div>
               <div style={s.timelineCard}>
                 <h3 style={s.timelineTitle}>Enhanced Screening</h3>
@@ -160,7 +160,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div style={s.timelineItem}>
+            <div style={s.timelineItem} className="epq-home-timeline-item">
               <div style={s.timelinePeriod}>Q3 2026</div>
               <div style={s.timelineCard}>
                 <h3 style={s.timelineTitle}>ATS Integration</h3>
@@ -173,7 +173,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div style={s.timelineItem}>
+            <div style={s.timelineItem} className="epq-home-timeline-item">
               <div style={s.timelinePeriod}>Q4 2026</div>
               <div style={s.timelineCard}>
                 <h3 style={s.timelineTitle}>Lifecycle Management</h3>
@@ -186,7 +186,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div style={s.timelineItem}>
+            <div style={s.timelineItem} className="epq-home-timeline-item">
               <div style={s.timelinePeriod}>2027</div>
               <div style={s.timelineCard}>
                 <h3 style={s.timelineTitle}>Enterprise Platform</h3>
@@ -207,8 +207,8 @@ export default function HomePage() {
           <p style={s.ctaSub}>
             Enterprise assessment tools with validated psychometric instruments
           </p>
-          <div style={s.ctaActions}>
-            <Link href="/employer/register" style={s.btnPrimary}>Start Trial</Link>
+          <div style={s.ctaActions} className="epq-home-actions">
+            <Link href="/employer/signup" style={s.btnPrimary}>Start Trial</Link>
             <Link href="/employer/login" style={s.btnSecondary}>Sign In</Link>
           </div>
         </section>
@@ -216,8 +216,8 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer style={s.footer}>
-        <div style={s.container}>
-          <div style={s.footerContent}>
+        <div style={s.container} className="epq-home-container">
+          <div style={s.footerContent} className="epq-home-footer-content">
             <div>
               <div style={s.brand}>
                 <Image 
@@ -232,7 +232,7 @@ export default function HomePage() {
                 Validated psychometric instruments for enterprise hiring decisions
               </p>
             </div>
-            <div style={s.footerLinks}>
+            <div style={s.footerLinks} className="epq-home-footer-links">
               <div>
                 <h4 style={s.footerLinkTitle}>Platform</h4>
                 <Link href="#platform" style={s.footerLink}>Features</Link>
@@ -248,7 +248,7 @@ export default function HomePage() {
             </div>
           </div>
           <div style={s.footerBottom}>
-            © 2026 Holland Systems. All rights reserved.
+            &copy; 2026 Holland Systems. All rights reserved.
           </div>
         </div>
       </footer>

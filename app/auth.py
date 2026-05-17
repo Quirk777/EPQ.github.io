@@ -18,6 +18,12 @@ pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 limiter = get_limiter()
 logger = logging.getLogger("epq.auth")
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = (os.environ.get(name) or "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on"}
+
 def require_employer(request: Request):
     emp_id = request.session.get("employer_id")
     if not emp_id:
@@ -26,6 +32,18 @@ def require_employer(request: Request):
     if not emp:
         request.session.clear()
         raise HTTPException(status_code=401, detail="Session invalid")
+    if _env_flag("REQUIRE_EMAIL_VERIFICATION", False):
+        email = (emp.get("email") or "").strip().lower()
+        employer_data = auth_db.get_employer_by_email(email) if email else None
+        if not employer_data or not employer_data.get("email_verified"):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "EMAIL_VERIFICATION_REQUIRED",
+                    "message": "Please verify your email address before accessing this area.",
+                    "resend_url": "/auth/resend-verification",
+                },
+            )
     return emp
 
 async def _safe_json(req: Request) -> dict:
@@ -268,4 +286,3 @@ async def get_current_user(req: Request):
 async def logout(req: Request):
     req.session.clear()
     return {"status": "ok"}
-

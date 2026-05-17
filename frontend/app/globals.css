@@ -78,6 +78,19 @@ html {
   scroll-behavior: smooth;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
@@ -109,6 +122,63 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.8);
+}
+
+@media (max-width: 760px) {
+  .epq-home-container {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+  }
+
+  .epq-home-nav-links,
+  .epq-home-actions,
+  .epq-home-footer-links {
+    width: 100%;
+    flex-wrap: wrap !important;
+  }
+
+  .epq-home-actions a {
+    flex: 1 1 180px;
+    text-align: center;
+  }
+
+  .epq-home-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .epq-home-timeline-item,
+  .epq-home-footer-content {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  .epq-dashboard-layout {
+    flex-direction: column !important;
+  }
+
+  .epq-dashboard-sidebar {
+    width: 100% !important;
+    max-height: none !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--border-default) !important;
+  }
+
+  .epq-dashboard-panel {
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  .epq-dashboard-main {
+    padding: var(--space-4) !important;
+  }
+
+  .epq-table-scroll {
+    overflow-x: auto !important;
+  }
+
+  .epq-table-scroll table {
+    min-width: 720px;
+  }
 }
 
 /* Animated gradient backgrounds */
@@ -170,4 +240,3 @@ html {
 .slide-in-right {
   animation: slideInRight 0.6s ease-out forwards;
 }
-

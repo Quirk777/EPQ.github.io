@@ -8,6 +8,7 @@ from io import BytesIO
 import re
 import shutil
 from pathlib import Path
+from html import escape as html_escape
 
 # CRITICAL: Set wkhtmltopdf path at module import time
 # This ensures background tasks have access to it
@@ -412,6 +413,8 @@ def generate_pdf_report(
     except Exception:
         pass
 
+    safe_app_name = html_escape(str(app_name or ""))
+
     html = f"""
     <html>
     <head>
@@ -431,7 +434,7 @@ def generate_pdf_report(
     </head>
     <body>
       <h1>EPQ Applicant Report</h1>
-      <div><strong>Applicant:</strong> {app_name or "—"} &nbsp;&nbsp; <strong>Candidate ID:</strong> {candidate_id} &nbsp;&nbsp; <strong>Date:</strong> {timestamp}</div>
+    <div><strong>Applicant:</strong> {safe_app_name or "—"} &nbsp;&nbsp; <strong>Candidate ID:</strong> {html_escape(str(candidate_id))} &nbsp;&nbsp; <strong>Date:</strong> {html_escape(str(timestamp))}</div>
 
 
       <h2>Environmental Fit Summary ({str(employer_environment).capitalize()} environment)</h2>
@@ -509,10 +512,14 @@ def generate_pdf_report(
             "margin-right": "15mm",
             "page-size": "A4",
             "encoding": "UTF-8",
-            "enable-local-file-access": None,
             "images": None,
             "quiet": "",
         }
+
+        # Security: do NOT allow local file access by default.
+        # If you truly need it (e.g., you embed local assets), opt-in explicitly.
+        if (os.environ.get("WKHTMLTOPDF_ENABLE_LOCAL_FILE_ACCESS", "false") or "false").lower() == "true":
+            options["enable-local-file-access"] = None
 
         pdfkit.from_string(html, str(pdf_path), configuration=config, options=options)
 

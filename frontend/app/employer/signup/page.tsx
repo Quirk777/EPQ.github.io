@@ -122,7 +122,7 @@ export default function EmployerSignupPage() {
             fontWeight: 900,
             boxShadow: "0 8px 32px rgba(133, 182, 156, 0.4)",
           }}>
-            ✓
+            OK
           </div>
           <h1 style={{
             fontSize: 28,
@@ -137,7 +137,7 @@ export default function EmployerSignupPage() {
             fontSize: 16,
             lineHeight: 1.6,
           }}>
-            Redirecting you to login...
+            Check your email for a verification link, then sign in to continue.
           </p>
         </div>
       </main>
@@ -384,13 +384,14 @@ export default function EmployerSignupPage() {
                   transform: "translateY(-50%)",
                   background: "none",
                   border: "none",
-                  color: "rgba(255, 255, 255, 0.5)",
+                  color: "var(--text-secondary)",
                   cursor: "pointer",
-                  fontSize: 20,
+                  fontSize: 12,
+                  fontWeight: 700,
                   padding: 4,
                 }}
               >
-                {showPassword ? "🙈" : "👁️"}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
           </label>
@@ -426,7 +427,7 @@ export default function EmployerSignupPage() {
                       marginTop: 6,
                     }}
                   >
-                    <span>{passes ? "✔️" : "○"}</span>
+                    <span>{passes ? "OK" : "-"}</span>
                     <span>{rule.label}</span>
                   </div>
                 );
@@ -495,7 +496,7 @@ export default function EmployerSignupPage() {
             fontSize: 12,
             color: "rgba(16, 185, 129, 0.9)",
           }}>
-            🔒 Secure connection · Your data is encrypted
+            Secure connection - your data is encrypted
           </div>
         </form>
       </div>

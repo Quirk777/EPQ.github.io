@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -149,7 +149,7 @@ export default function RoleCreateClient() {
       conf.push("High innovation + intense pace can cause rushed decisions");
     }
     if (vals.ambiguity > 70 && vals.structure > 70) {
-      conf.push("⚠️ High ambiguity + structured processes is contradictory");
+      conf.push("High ambiguity + structured processes is contradictory");
     }
 
     setConflicts(conf);
@@ -166,6 +166,7 @@ export default function RoleCreateClient() {
 
     try {
       const payload = {
+        name: roleTitle,
         title: roleTitle,
         team,
         level,
@@ -206,7 +207,7 @@ export default function RoleCreateClient() {
             </p>
           </div>
           <Link href="/employer/modules" style={s.btnOutline}>
-            ← Back to Modules
+          Back to Modules
           </Link>
         </header>
 
@@ -293,7 +294,7 @@ export default function RoleCreateClient() {
                 disabled={!roleTitle}
                 style={!roleTitle ? {...s.btnPrimary, opacity: 0.5, cursor: "not-allowed"} : s.btnPrimary}
               >
-                Next: Define Environment →
+                Next: Define Environment
               </button>
             </div>
           </div>
@@ -346,10 +347,10 @@ export default function RoleCreateClient() {
 
             <div style={s.actions}>
               <button onClick={() => setStep(1)} style={s.btnOutline}>
-                ← Back
+                Back
               </button>
               <button onClick={handleStep2Next} style={s.btnPrimary}>
-                Next: Review →
+                Next: Review
               </button>
             </div>
           </div>
@@ -370,15 +371,15 @@ export default function RoleCreateClient() {
                 </div>
                 <div style={s.summaryItem}>
                   <div style={s.summaryLabel}>Team</div>
-                  <div style={s.summaryValue}>{team || "—"}</div>
+                  <div style={s.summaryValue}>{team || "-"}</div>
                 </div>
                 <div style={s.summaryItem}>
                   <div style={s.summaryLabel}>Level</div>
-                  <div style={s.summaryValue}>{level || "—"}</div>
+                  <div style={s.summaryValue}>{level || "-"}</div>
                 </div>
                 <div style={s.summaryItem}>
                   <div style={s.summaryLabel}>Hiring Manager</div>
-                  <div style={s.summaryValue}>{hiringManager || "—"}</div>
+                  <div style={s.summaryValue}>{hiringManager || "-"}</div>
                 </div>
               </div>
             </div>
@@ -407,14 +408,14 @@ export default function RoleCreateClient() {
                   <div key={i} style={s.conflictItem}>{c}</div>
                 ))}
                 <div style={s.conflictsNote}>
-                  These aren&apos;t errors—they&apos;re insights. Consider adjusting sliders or planning management adaptations.
+                  These are not errors; they are insights. Consider adjusting sliders or planning management adaptations.
                 </div>
               </div>
             )}
 
             <div style={s.actions}>
               <button onClick={() => setStep(2)} style={s.btnOutline}>
-                ← Back
+                Back
               </button>
               <button
                 onClick={handleSubmit}
@@ -510,8 +511,8 @@ const s = {
     width: 40,
     height: 40,
     borderRadius: "50%",
-    background: "#e2e8f0",
-    color: "#64748b",
+    background: "var(--surface-2)",
+    color: "var(--text-secondary)",
     display: "grid",
     placeItems: "center",
     fontWeight: 900,
@@ -521,21 +522,21 @@ const s = {
   progressLabel: {
     fontSize: 13,
     fontWeight: 600,
-    color: "#64748b",
+    color: "var(--text-secondary)",
   } as const,
 
   progressLine: {
     width: 80,
     height: 2,
-    background: "#e2e8f0",
+    background: "var(--border-default)",
   } as const,
 
   error: {
     padding: 16,
     borderRadius: 12,
-    background: "#fef2f2",
-    border: "1px solid #fecaca",
-    color: "#dc2626",
+    background: "rgba(196, 137, 137, 0.12)",
+    border: "1px solid rgba(196, 137, 137, 0.35)",
+    color: "var(--color-error)",
     marginBottom: 24,
     fontWeight: 600,
   } as const,
@@ -558,7 +559,7 @@ const s = {
   cardDesc: {
     margin: "0 0 28px 0",
     fontSize: 15,
-    color: "#64748b",
+    color: "var(--text-secondary)",
     lineHeight: 1.6,
   } as const,
 
@@ -578,6 +579,7 @@ const s = {
   fieldRow: {
     display: "flex",
     gap: 16,
+    flexWrap: "wrap" as const,
   } as const,
 
   label: {
@@ -620,18 +622,18 @@ const s = {
   sliderLabel: {
     fontSize: 16,
     fontWeight: 800,
-    color: "#0f172a",
+    color: "var(--text-primary)",
   } as const,
 
   sliderValue: {
     fontSize: 18,
     fontWeight: 900,
-    color: "#3b82f6",
+    color: "var(--accent-blue)",
   } as const,
 
   sliderDesc: {
     fontSize: 13,
-    color: "#64748b",
+    color: "var(--text-secondary)",
     marginBottom: 16,
   } as const,
 
@@ -640,12 +642,13 @@ const s = {
     alignItems: "center",
     gap: 12,
     marginBottom: 16,
+    flexWrap: "wrap" as const,
   } as const,
 
   sliderLeft: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#64748b",
+    color: "var(--text-tertiary)",
     minWidth: 80,
     textAlign: "right" as const,
   },
@@ -653,7 +656,7 @@ const s = {
   sliderRight: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#64748b",
+    color: "var(--text-tertiary)",
     minWidth: 80,
   } as const,
 
@@ -661,28 +664,28 @@ const s = {
     flex: 1,
     height: 8,
     borderRadius: 4,
-    background: "#e2e8f0",
+    background: "var(--surface-3)",
     outline: "none",
     appearance: "none" as const,
   } as const,
 
   tradeoffs: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 12,
   } as const,
 
   tradeoff: {
     padding: 12,
     borderRadius: 8,
-    background: "#fff",
-    border: "1px solid #e2e8f0",
+    background: "var(--surface-2)",
+    border: "1px solid var(--border-subtle)",
   } as const,
 
   tradeoffLabel: {
     fontSize: 11,
     fontWeight: 800,
-    color: "#64748b",
+    color: "var(--text-tertiary)",
     marginBottom: 4,
     textTransform: "uppercase" as const,
     letterSpacing: 0.5,
@@ -690,7 +693,7 @@ const s = {
 
   tradeoffText: {
     fontSize: 13,
-    color: "#475569",
+    color: "var(--text-secondary)",
     lineHeight: 1.4,
   } as const,
 
@@ -698,15 +701,15 @@ const s = {
     marginBottom: 28,
     padding: 20,
     borderRadius: 12,
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
+    background: "var(--surface-1)",
+    border: "1px solid var(--border-subtle)",
   } as const,
 
   summaryTitle: {
     margin: "0 0 16px 0",
     fontSize: 18,
     fontWeight: 800,
-    color: "#0f172a",
+    color: "var(--text-primary)",
   } as const,
 
   summaryGrid: {
@@ -720,14 +723,14 @@ const s = {
   summaryLabel: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#64748b",
+    color: "var(--text-tertiary)",
     marginBottom: 4,
   } as const,
 
   summaryValue: {
     fontSize: 16,
     fontWeight: 800,
-    color: "#0f172a",
+    color: "var(--text-primary)",
   } as const,
 
   envGrid: {
@@ -738,7 +741,7 @@ const s = {
 
   envItem: {
     display: "grid",
-    gridTemplateColumns: "180px 1fr 60px",
+    gridTemplateColumns: "minmax(140px, 180px) 1fr 60px",
     gap: 12,
     alignItems: "center",
   } as const,
@@ -746,26 +749,26 @@ const s = {
   envItemLabel: {
     fontSize: 14,
     fontWeight: 700,
-    color: "#1e293b",
+    color: "var(--text-secondary)",
   } as const,
 
   envBar: {
     height: 10,
     borderRadius: 5,
-    background: "#e2e8f0",
+    background: "var(--surface-3)",
     overflow: "hidden",
   } as const,
 
   envBarFill: {
     height: "100%",
-    background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+    background: "var(--accent-blue)",
     transition: "width 0.3s",
   } as const,
 
   envItemValue: {
     fontSize: 14,
     fontWeight: 900,
-    color: "#3b82f6",
+    color: "var(--accent-blue)",
     textAlign: "right" as const,
   },
 
@@ -803,5 +806,6 @@ const s = {
     gap: "var(--space-3)",
     justifyContent: "flex-end",
     marginTop: "var(--space-7)",
+    flexWrap: "wrap" as const,
   } as const,
 };

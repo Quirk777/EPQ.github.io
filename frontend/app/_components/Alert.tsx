@@ -9,10 +9,10 @@ type AlertProps = {
 
 export default function Alert({ type, title, children, onRetry }: AlertProps) {
   const styles: Record<string, React.CSSProperties> = {
-    error:   { border: "1px solid #fca5a5", background: "#fef2f2", color: "#991b1b" },
-    success: { border: "1px solid #86efac", background: "#f0fdf4", color: "#166534" },
-    warning: { border: "1px solid #fde047", background: "#fefce8", color: "#854d0e" },
-    info:    { border: "1px solid #93c5fd", background: "#eff6ff", color: "#1e40af" }
+    error:   { border: "1px solid rgba(196, 137, 137, 0.35)", background: "rgba(196, 137, 137, 0.12)", color: "var(--color-error)" },
+    success: { border: "1px solid rgba(133, 182, 156, 0.35)", background: "rgba(133, 182, 156, 0.12)", color: "var(--color-success)" },
+    warning: { border: "1px solid rgba(196, 176, 137, 0.35)", background: "rgba(196, 176, 137, 0.12)", color: "var(--color-warning)" },
+    info:    { border: "1px solid rgba(137, 163, 196, 0.35)", background: "rgba(137, 163, 196, 0.12)", color: "var(--color-info)" }
   };
 
   return (
@@ -27,7 +27,8 @@ export default function Alert({ type, title, children, onRetry }: AlertProps) {
             padding: "8px 14px",
             borderRadius: 10,
             border: "1px solid currentColor",
-            background: "white",
+            background: "var(--surface-2)",
+            color: "inherit",
             cursor: "pointer"
           }}
         >

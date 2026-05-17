@@ -291,6 +291,10 @@ async def submit(assessment_id: str, request: Request, background_tasks: Backgro
         raise _HTTPException(status_code=500, detail='Submit failed: ' + str(e))
 @router.get("/debug/questions-shape/{assessment_id}")
 def debug_questions_shape(assessment_id: str):
+    import os
+    if (os.environ.get("ENVIRONMENT", "development") or "development").strip().lower() == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
     a = db.get_assessment(assessment_id)
     if not a:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -306,34 +310,12 @@ def debug_questions_shape(assessment_id: str):
         "raw_len": len(raw) if isinstance(raw, list) else None,
     }
 
-@router.get("/reports/by-candidate/{candidate_id}")
-def get_report_by_candidate(candidate_id: str, employer=Depends(require_employer)):
-    """
-    Employer-only: download the generated PDF for a given candidate_id.
-    """
-    row = db.get_applicant(candidate_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-
-    pdf_filename = row.get("pdf_filename") if isinstance(row, dict) else None
-    pdf_status = row.get("pdf_status") if isinstance(row, dict) else None
-
-    if not pdf_filename or pdf_status != "success":
-        raise HTTPException(status_code=404, detail="PDF not ready")
-
-    pdf_path = REPORTS_DIR / pdf_filename
-    if not pdf_path.exists():
-        # super helpful when debugging "DB says success but disk missing"
-        raise HTTPException(status_code=404, detail=f"PDF file missing on disk: {pdf_path}")
-
-    return FileResponse(
-        path=str(pdf_path),
-        media_type="application/pdf",
-        filename=pdf_filename,
-    )
-
 @router.get("/debug/normalize/{assessment_id}")
 def debug_normalize(assessment_id: str):
+    import os
+    if (os.environ.get("ENVIRONMENT", "development") or "development").strip().lower() == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
     a = db.get_assessment(assessment_id)
     if not a:
         raise HTTPException(status_code=404, detail="Assessment not found")

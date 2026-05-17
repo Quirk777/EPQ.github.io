@@ -268,48 +268,20 @@ async def delete_branding(request: Request):
 @router.get("/asset/{path:path}")
 async def get_asset(path: str, request: Request):
     """Serve branding assets (protected route)"""
-    print(f"=== ASSET REQUEST DEBUG ===")
-    print(f"Path: {path}")
-    print(f"Session keys: {list(request.session.keys()) if request.session else 'No session'}")
-    
     employer_id = request.session.get("employer_id") if request.session else None
-    print(f"Employer ID from session: {employer_id}")
-    
-    # Try to get employer_id from path if not in session
     if not employer_id:
-        print("No employer_id in session, trying to extract from path...")
-        # Extract employer_id from path: uploads/branding/{employer_id}/...
-        path_parts = path.replace("\\", "/").split("/")
-        if len(path_parts) >= 3 and path_parts[0] == "uploads" and path_parts[1] == "branding":
-            path_employer_id = path_parts[2]
-            print(f"Extracted employer_id from path: {path_employer_id}")
-            employer_id = path_employer_id
-        
-    if not employer_id:
-        print("ERROR: Not authenticated and couldn't extract employer_id from path")
         raise HTTPException(401, "Not authenticated")
-    
-    # Normalize path to use forward slashes for comparison
-    normalized_path = path.replace("\\", "/")
-    print(f"Normalized path: {normalized_path}")
-    
-    # Verify path belongs to this employer
-    expected_prefix = f"uploads/branding/{employer_id}/"
-    print(f"Expected prefix: {expected_prefix}")
-    
-    if not normalized_path.startswith(expected_prefix):
-        print(f"ERROR: Access denied - path doesn't start with expected prefix")
+
+    normalized_path = (path or "").replace("\\", "/").lstrip("/")
+
+    try:
+        file_path = storage.get_employer_file_path(str(employer_id), normalized_path)
+    except ValueError:
         raise HTTPException(403, "Access denied")
-    
-    file_path = storage.get_file_path(normalized_path)
-    print(f"Full file path: {file_path}")
-    print(f"File exists: {file_path.exists()}")
-    
+
     if not file_path.exists():
-        print(f"ERROR: File not found at {file_path}")
         raise HTTPException(404, "File not found")
-    
-    print("SUCCESS: Serving file")
+
     return FileResponse(
         path=str(file_path),
         media_type="image/png",

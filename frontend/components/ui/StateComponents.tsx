@@ -82,7 +82,7 @@ interface EmptyStateProps {
 export function EmptyState({
   title = "No data found",
   message = "There's nothing to show here yet.",
-  icon = "📭",
+  icon = "",
   actionLabel,
   onAction,
   children
@@ -140,7 +140,7 @@ export function ErrorState({
 
   return (
     <div style={styles.errorContainer}>
-      <div style={styles.errorIcon}>⚠️</div>
+      <div style={styles.errorIcon}>!</div>
       <h3 style={styles.errorTitle}>{title}</h3>
       <p style={styles.errorMessage}>{message}</p>
       

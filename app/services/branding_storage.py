@@ -34,9 +34,44 @@ class BrandingStorage:
             shutil.rmtree(employer_dir)
     
     def get_file_path(self, relative_path: str) -> Path:
-        """Convert relative path to absolute file path"""
-        # Ensure we use forward slashes for consistency, then convert to absolute path
-        normalized_path = relative_path.replace("\\", "/")
-        # Use Path.cwd() to get current working directory and join with the relative path
-        absolute_path = Path.cwd() / normalized_path
+        """Convert a branding URL path to an absolute on-disk path.
+
+        Security: callers should prefer `get_employer_file_path()` which pins access
+        to a specific employer directory.
+        """
+        normalized_path = (relative_path or "").replace("\\", "/").lstrip("/")
+        absolute_path = (Path.cwd() / normalized_path).resolve()
+        allowed_root = (Path.cwd() / self.base_path).resolve()
+
+        try:
+            absolute_path.relative_to(allowed_root)
+        except Exception:
+            raise ValueError("Invalid branding asset path")
+
         return absolute_path
+
+    def get_employer_file_path(self, employer_id: str, url_path: str) -> Path:
+        """Resolve an employer-scoped branding asset path safely.
+
+        `url_path` is expected to look like: uploads/branding/{employer_id}/.../file.png
+        """
+        employer_id = (employer_id or "").strip()
+        if not employer_id:
+            raise ValueError("Missing employer_id")
+
+        normalized = (url_path or "").replace("\\", "/").lstrip("/")
+        prefix = f"uploads/branding/{employer_id}/"
+        if not normalized.startswith(prefix):
+            raise ValueError("Access denied")
+
+        remainder = normalized[len(prefix):]
+
+        employer_root = (Path.cwd() / self.base_path / employer_id).resolve()
+        asset_path = (employer_root / remainder).resolve()
+
+        try:
+            asset_path.relative_to(employer_root)
+        except Exception:
+            raise ValueError("Invalid branding asset path")
+
+        return asset_path

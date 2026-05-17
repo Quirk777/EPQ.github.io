@@ -125,6 +125,47 @@ textarea:focus-visible {
 }
 
 @media (max-width: 760px) {
+  html,
+  body {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: rgba(180, 199, 231, 0.18);
+  }
+
+  button,
+  a[role="button"],
+  .epq-row-action,
+  .epq-dashboard-actions a,
+  .epq-dashboard-actions button,
+  .epq-applicant-share-actions a,
+  .epq-applicant-share-actions button {
+    min-height: 44px !important;
+    touch-action: manipulation;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .epq-dashboard-root {
+    overflow: visible !important;
+  }
+
   .epq-home-container {
     padding-left: var(--space-4) !important;
     padding-right: var(--space-4) !important;
@@ -154,11 +195,14 @@ textarea:focus-visible {
 
   .epq-dashboard-layout {
     flex-direction: column !important;
+    min-height: 100dvh !important;
   }
 
   .epq-dashboard-sidebar {
     width: 100% !important;
+    flex: 0 0 auto !important;
     max-height: none !important;
+    overflow: visible !important;
     border-right: 0 !important;
     border-bottom: 1px solid var(--border-default) !important;
   }
@@ -168,16 +212,149 @@ textarea:focus-visible {
     overflow: visible !important;
   }
 
+  .epq-dashboard-header {
+    padding: var(--space-4) !important;
+  }
+
+  .epq-dashboard-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch !important;
+  }
+
+  .epq-dashboard-actions > * {
+    width: 100%;
+    text-align: center;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    white-space: normal;
+  }
+
   .epq-dashboard-main {
     padding: var(--space-4) !important;
+    overflow: visible !important;
+  }
+
+  .epq-applicant-share {
+    align-items: stretch !important;
+    padding: var(--space-4) !important;
+  }
+
+  .epq-applicant-share > div:first-child {
+    min-width: 0 !important;
+    flex-basis: 100% !important;
+  }
+
+  .epq-applicant-share-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .epq-applicant-link-code {
+    max-width: none !important;
+    width: 100%;
+    white-space: normal !important;
+    word-break: break-all;
+    line-height: 1.45;
   }
 
   .epq-table-scroll {
     overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 
   .epq-table-scroll table {
-    min-width: 720px;
+    min-width: 680px;
+  }
+
+  .epq-row-action {
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2) var(--space-3) !important;
+    white-space: nowrap;
+  }
+
+  .epq-empty-state {
+    padding: var(--space-8) var(--space-4) !important;
+  }
+
+  .react-joyride__tooltip,
+  #react-joyride-portal [data-test-id="tooltip"] {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  #react-joyride-portal {
+    z-index: 2147483000 !important;
+  }
+
+  .epq-pdf-viewer-page {
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .epq-pdf-toolbar {
+    padding: max(10px, env(safe-area-inset-top)) 12px 10px !important;
+    align-items: stretch !important;
+  }
+
+  .epq-pdf-toolbar-left,
+  .epq-pdf-toolbar-right {
+    width: 100%;
+    justify-content: space-between !important;
+  }
+
+  .epq-pdf-toolbar-right {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .epq-pdf-toolbar button,
+  .epq-pdf-toolbar a {
+    min-height: 44px !important;
+    justify-content: center !important;
+    white-space: nowrap;
+  }
+
+  .epq-pdf-toolbar h1 {
+    max-width: calc(100vw - 118px);
+  }
+
+  .epq-pdf-mobile-fallback {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 420px) {
+  .epq-dashboard-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .epq-table-scroll table {
+    min-width: 620px;
+  }
+
+  .epq-pdf-toolbar-right {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .epq-dashboard-sidebar {
+    max-height: none !important;
+  }
+
+  .epq-dashboard-main {
+    padding: var(--space-3) !important;
+  }
+
+  .epq-pdf-toolbar {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
   }
 }
 

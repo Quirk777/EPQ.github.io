@@ -16,6 +16,14 @@ function safePdfPath(url: string) {
   }
 }
 
+function prefersPdfFallback() {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
+  const isSmallSafari = window.matchMedia("(max-width: 760px)").matches && /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+  return isIOS || isSmallSafari;
+}
+
 export default function PDFViewerClient() {
   const searchParams = useSearchParams();
   const rawPdfUrl = searchParams?.get("url") || "";
@@ -26,6 +34,7 @@ export default function PDFViewerClient() {
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [mobilePdfFallback, setMobilePdfFallback] = useState(false);
 
   const displayUrl = useMemo(() => {
     if (!pdfUrl) return "";
@@ -46,6 +55,23 @@ export default function PDFViewerClient() {
   const handlePrint = () => {
     window.print();
   };
+
+  const openPdf = () => {
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+  };
+
+  useEffect(() => {
+    function updateFallback() {
+      setMobilePdfFallback(prefersPdfFallback());
+    }
+    updateFallback();
+    window.addEventListener("resize", updateFallback);
+    window.addEventListener("orientationchange", updateFallback);
+    return () => {
+      window.removeEventListener("resize", updateFallback);
+      window.removeEventListener("orientationchange", updateFallback);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +114,7 @@ export default function PDFViewerClient() {
 
   if (!pdfUrl) {
     return (
-      <div style={s.page}>
+      <div className="epq-pdf-viewer-page" style={s.page}>
         <div style={s.errorContainer}>
           <h1 style={s.errorTitle}>No PDF URL provided</h1>
           <Link href="/employer/dashboard" style={s.btnPrimary}>
@@ -101,7 +127,7 @@ export default function PDFViewerClient() {
 
   if (loadError) {
     return (
-      <div style={s.page}>
+      <div className="epq-pdf-viewer-page" style={s.page}>
         <div style={s.errorContainer}>
           <h1 style={s.errorTitle}>Report not available</h1>
           <p style={s.errorBody}>{loadError}</p>
@@ -120,7 +146,7 @@ export default function PDFViewerClient() {
 
   if (processing) {
     return (
-      <div style={s.page}>
+      <div className="epq-pdf-viewer-page" style={s.page}>
         <div style={s.errorContainer}>
           <h1 style={s.errorTitle}>Report still processing</h1>
           <p style={s.errorBody}>
@@ -140,10 +166,10 @@ export default function PDFViewerClient() {
   }
 
   return (
-    <div style={s.page}>
+    <div className="epq-pdf-viewer-page" style={s.page}>
       {/* Toolbar */}
-      <div style={{ ...s.toolbar, opacity: showControls ? 1 : 0 }}>
-        <div style={s.toolbarLeft}>
+      <div className="epq-pdf-toolbar" style={{ ...s.toolbar, opacity: showControls ? 1 : 0 }}>
+        <div className="epq-pdf-toolbar-left" style={s.toolbarLeft}>
           <Link href="/employer/dashboard" style={s.toolbarBtn}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -153,7 +179,7 @@ export default function PDFViewerClient() {
           <h1 style={s.toolbarTitle}>{candidateName} - Report</h1>
         </div>
         
-        <div style={s.toolbarRight}>
+        <div className="epq-pdf-toolbar-right" style={s.toolbarRight}>
           <button onClick={handlePrint} style={s.toolbarBtn}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
@@ -191,6 +217,23 @@ export default function PDFViewerClient() {
           <div style={s.fallback}>
             <p style={s.fallbackText}>Loading report preview...</p>
           </div>
+        ) : mobilePdfFallback ? (
+          <div className="epq-pdf-mobile-fallback" style={s.mobileFallback}>
+            <div style={s.mobileFallbackPanel}>
+              <h1 style={s.errorTitle}>PDF preview is ready</h1>
+              <p style={s.errorBody}>
+                Mobile Safari may open PDFs more reliably in its native viewer. Open the report in a new tab, then use Safari Share or Download if needed.
+              </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                <button onClick={openPdf} style={s.btnPrimary}>
+                  Open PDF
+                </button>
+                <button onClick={handleDownload} style={s.toolbarBtn as React.CSSProperties}>
+                  Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           <object
             data={displayUrl}
@@ -227,6 +270,7 @@ const s = {
     backgroundColor: "var(--surface-0)",
     display: "flex",
     flexDirection: "column" as const,
+    minHeight: "100dvh",
   },
   toolbar: {
     display: "flex",
@@ -245,12 +289,14 @@ const s = {
     alignItems: "center",
     gap: 16,
     minWidth: 0,
+    flex: "1 1 280px",
   },
   toolbarRight: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     flexWrap: "wrap" as const,
+    justifyContent: "flex-end",
   },
   toolbarTitle: {
     fontSize: 16,
@@ -260,12 +306,14 @@ const s = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    minWidth: 0,
   },
   toolbarBtn: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     padding: "8px 14px",
+    minHeight: 44,
     borderRadius: 8,
     border: "1px solid var(--border-default)",
     backgroundColor: "var(--surface-2)",
@@ -285,7 +333,7 @@ const s = {
   } as React.CSSProperties,
   viewerShell: {
     flex: 1,
-    padding: 16,
+    padding: "16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
     background: "var(--surface-0)",
     minHeight: 0,
   } as React.CSSProperties,
@@ -303,7 +351,7 @@ const s = {
     alignItems: "center",
     justifyContent: "center",
     gap: 20,
-    padding: 40,
+    padding: "40px 20px",
     height: "100%",
     backgroundColor: "var(--surface-1)",
   } as React.CSSProperties,
@@ -317,8 +365,8 @@ const s = {
     alignItems: "center",
     justifyContent: "center",
     gap: 20,
-    padding: 40,
-    height: "100vh",
+    padding: "40px 20px",
+    minHeight: "100dvh",
   },
   errorTitle: {
     fontSize: 24,
@@ -335,6 +383,7 @@ const s = {
   },
   btnPrimary: {
     padding: "12px 20px",
+    minHeight: 44,
     borderRadius: 8,
     backgroundColor: "var(--accent-blue-glow)",
     border: "1px solid var(--accent-blue-dim)",
@@ -344,5 +393,20 @@ const s = {
     cursor: "pointer",
     textDecoration: "none",
     display: "inline-block",
+  } as React.CSSProperties,
+  mobileFallback: {
+    minHeight: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "var(--surface-0)",
+  } as React.CSSProperties,
+  mobileFallbackPanel: {
+    width: "min(520px, 100%)",
+    border: "1px solid var(--border-default)",
+    borderRadius: 8,
+    background: "var(--surface-1)",
+    padding: 24,
+    textAlign: "center" as const,
   } as React.CSSProperties,
 };

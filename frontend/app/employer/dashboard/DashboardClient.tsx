@@ -385,7 +385,7 @@ export default function DashboardClient() {
       color: "var(--text-primary)",
       position: "relative" as const,
       overflow: "hidden" as const,
-    }} className="texture-background">
+    }} className="texture-background epq-dashboard-root">
       {/* Main Layout Container with Sidebar */}
       <div className="epq-dashboard-layout" style={{
         display: "flex",
@@ -702,7 +702,7 @@ export default function DashboardClient() {
           overflow: "hidden",
         }}>
           {/* Top Header */}
-          <header data-tour="dashboard-header" style={{
+          <header data-tour="dashboard-header" className="epq-dashboard-header" style={{
             padding: "var(--space-5) var(--space-8)",
             borderBottom: "1px solid var(--border-default)",
             background: "var(--surface-1)",
@@ -723,7 +723,7 @@ export default function DashboardClient() {
                 </div>
               </div>
 
-              <div data-tour="dashboard-actions" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" as const }}>
+              <div data-tour="dashboard-actions" className="epq-dashboard-actions" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" as const }}>
                 <button
                   type="button"
                   onClick={function () {
@@ -891,6 +891,7 @@ export default function DashboardClient() {
               <>
       <section
         data-tour="applicant-share"
+        className="epq-applicant-share"
         style={{
           position: "relative" as const,
           zIndex: 1,
@@ -907,7 +908,7 @@ export default function DashboardClient() {
         }}
       >
         <div style={{ minWidth: 240, flex: 1 }}>
-          <div style={{
+          <div className="epq-applicant-share-actions" style={{
             fontSize: "var(--text-xs)",
             color: "var(--text-tertiary)",
             textTransform: "uppercase" as const,
@@ -934,7 +935,7 @@ export default function DashboardClient() {
             gap: "var(--space-2)",
             flexWrap: "wrap" as const,
           }}>
-            <code style={{
+            <code className="epq-applicant-link-code" style={{
               padding: "10px 12px",
               borderRadius: 6,
               border: "1px solid var(--border-default)",
@@ -1038,7 +1039,7 @@ export default function DashboardClient() {
       )}
 
       {!loading && !error && rows.length === 0 && (
-        <div data-tour="submissions-empty" style={{
+        <div data-tour="submissions-empty" className="epq-empty-state" style={{
           textAlign: "center", 
           padding: "var(--space-12) var(--space-6)", 
           marginTop: "var(--space-4)", 
@@ -1185,6 +1186,7 @@ export default function DashboardClient() {
                       <div style={{ display: "flex", gap: "var(--space-2)" }}>
                         <a
                           data-tour="candidate-details-link"
+                          className="epq-row-action"
                           href={`/employer/candidates/${id}`} 
                           style={{ 
                             fontWeight: 500, 
@@ -1205,6 +1207,7 @@ export default function DashboardClient() {
                         {pdf && (
                           <a
                             data-tour="pdf-report-link"
+                            className="epq-row-action"
                             href={`/employer/pdf-viewer?url=${encodeURIComponent(pdf)}&name=${encodeURIComponent(r.name || id)}`}
                             style={{ 
                               fontWeight: 700, 

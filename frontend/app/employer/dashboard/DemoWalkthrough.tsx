@@ -18,83 +18,92 @@ function targetFor(...selectors: string[]) {
   return selectors.find((selector) => document.querySelector(selector)) || selectors[0];
 }
 
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 760px)").matches;
+}
+
+function placementFor(desktop: Step["placement"], mobile: Step["placement"] = "center") {
+  return isMobileViewport() ? mobile : desktop;
+}
+
 function buildSteps(): TourStep[] {
   return [
     {
       target: targetFor('[data-tour="dashboard-header"]', "body"),
       title: "Dashboard overview",
       content: "This is the employer control center for EPQ. It brings together roles, applicant submissions, candidate reports, and demo navigation.",
-      placement: "bottom",
+      placement: placementFor("bottom", "center"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="roles-sidebar"]', '[data-tour="dashboard-header"]', "body"),
       title: "Roles sidebar",
       content: "Roles organize the assessment flow. Select a role to review submissions, open setup, and see the applicant pipeline for that specific position.",
-      placement: "right",
+      placement: placementFor("right", "bottom"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="create-role-footer"]', '[data-tour="create-role-empty"]', '[data-tour="roles-sidebar"]', "body"),
       title: "Create role and assessment",
       content: "Start here to define the role and work environment. After the role exists, Setup EPQ creates the assessment and applicant link.",
-      placement: "right",
+      placement: placementFor("right", "bottom"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="applicant-share"]', '[data-tour="setup-epq"]', '[data-tour="role-card"]', '[data-tour="create-role-footer"]', "body"),
       title: "Applicant link sharing",
       content: "This panel shows the next action for the selected role. If an assessment exists, copy the applicant link here. If not, use the setup button to create it.",
-      placement: "bottom",
+      placement: placementFor("bottom", "center"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="submissions-table"]', '[data-tour="submissions-empty"]', '[data-tour="dashboard-main"]', "body"),
       title: "Submissions and candidates",
       content: "Completed applicants appear here for the selected role. If there are no applicants yet, EPQ shows a clean empty state with the next step instead of an error.",
-      placement: "top",
+      placement: placementFor("top", "center"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="pdf-report-link"]', '[data-tour="candidate-details-link"]', '[data-tour="submissions-table"]', '[data-tour="submissions-empty"]', '[data-tour="dashboard-main"]', "body"),
       title: "PDF report viewing",
       content: "When report generation succeeds, open the PDF from the candidate row or detail page. If no PDF is present yet, this step uses the submissions area as context.",
-      placement: "auto",
+      placement: placementFor("auto", "center"),
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="modules-hero"]', "body"),
       title: "Modules hub",
       content: "The Modules page shows the broader EPQ workspace. Active modules are clickable; roadmap modules are clearly marked as Coming Soon.",
-      placement: "auto",
+      placement: placementFor("auto", "center"),
       data: { route: "/employer/modules" },
     },
     {
       target: targetFor('[data-tour="modules-active"]', '[data-tour="modules-hero"]', "body"),
       title: "Active modules",
       content: "These are the demo-ready product areas, including role setup, candidate review, analytics, scheduling, compliance, and related workflows.",
-      placement: "top",
+      placement: placementFor("top", "center"),
       data: { route: "/employer/modules" },
     },
     {
       target: targetFor('[data-tour="modules-coming-soon"]', '[data-tour="modules-active"]', "body"),
       title: "Coming Soon",
       content: "This section is intentionally roadmap/demo-only. It helps frame the product vision without implying every module is live today.",
-      placement: "top",
+      placement: placementFor("top", "center"),
       data: { route: "/employer/modules" },
     },
     {
       target: targetFor('[data-tour="analytics-header"]', "body"),
       title: "Analytics section",
       content: "Analytics gives a demo view of hiring funnel health and pipeline performance. Treat these charts as directional until connected to full production data.",
-      placement: "auto",
+      placement: placementFor("auto", "center"),
       data: { route: "/employer/analytics" },
     },
     {
       target: targetFor('[data-tour="analytics-funnel"]', '[data-tour="analytics-metrics"]', "body"),
       title: "Pipeline insights",
       content: "Use this area to explain where candidates move through the process and where drop-off or bottlenecks may appear.",
-      placement: "top",
+      placement: placementFor("top", "center"),
       data: { route: "/employer/analytics" },
     },
     {
@@ -189,6 +198,7 @@ export default function DemoWalkthrough() {
       setRun(false);
       setSteps([]);
       cleanupJoyridePortal();
+      window.scrollTo({ top: 0, behavior: "auto" });
       router.push(route);
     }
   }, [tourActive, pathname, router, stepIndex, steps]);
@@ -213,6 +223,7 @@ export default function DemoWalkthrough() {
       setRun(false);
       setSteps([]);
       cleanupJoyridePortal();
+      window.scrollTo({ top: 0, behavior: "auto" });
       router.push(route);
     }
   }
@@ -280,7 +291,7 @@ export default function DemoWalkthrough() {
         spotlightRadius: 8,
         targetWaitTimeout: 700,
         textColor: "#E8E9ED",
-        width: "min(420px, calc(100vw - 32px))",
+        width: "min(420px, calc(100vw - 24px))",
         zIndex: 1100,
       }}
       run={run && tourActive && steps.length > 0}
@@ -293,7 +304,7 @@ export default function DemoWalkthrough() {
           borderRadius: 8,
           boxShadow: "0 24px 80px rgba(0, 0, 0, 0.45)",
           fontSize: 14,
-          maxWidth: "calc(100vw - 32px)",
+          maxWidth: "calc(100vw - 24px)",
           overflowWrap: "break-word",
           wordBreak: "normal",
         },
@@ -315,16 +326,21 @@ export default function DemoWalkthrough() {
           borderRadius: 6,
           color: "var(--accent-blue)",
           fontWeight: 700,
-          padding: "8px 14px",
+          minHeight: 44,
+          padding: "10px 16px",
         },
         buttonBack: {
           color: "var(--text-secondary)",
           fontWeight: 700,
+          minHeight: 44,
+          padding: "10px 12px",
           marginRight: 8,
         },
         buttonSkip: {
           color: "var(--text-tertiary)",
           fontWeight: 700,
+          minHeight: 44,
+          padding: "10px 12px",
         },
       }}
       locale={{

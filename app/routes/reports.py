@@ -1,6 +1,6 @@
 # app/routes/reports.py
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pathlib import Path
 import os
 import json
@@ -16,21 +16,50 @@ REPORTS_DIR = Path(os.environ.get("REPORTS_DIR") or (PROJECT_ROOT / "reports")).
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _stream_pdf(pdf_file: Path, download_name: str) -> StreamingResponse:
+def _pdf_headers(download_name: str, as_attachment: bool = False) -> dict[str, str]:
+    disposition = "attachment" if as_attachment else "inline"
+    return {
+        "Content-Disposition": f'{disposition}; filename="{download_name}"',
+        "Cache-Control": "private, no-store",
+    }
+
+
+def _stream_pdf(pdf_file: Path, download_name: str, as_attachment: bool = False) -> StreamingResponse:
     """
     Stream a PDF from disk. Using StreamingResponse avoids some Windows FileResponse edge cases.
     """
-    try:
-        f = open(pdf_file, "rb")
-    except Exception as e:
+    if not pdf_file.exists():
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to open PDF: {type(e).__name__}: {e}",
+            status_code=404,
+            detail="PDF missing on server",
         )
 
-    # Use "inline" to display in browser, not "attachment" to download
-    headers = {"Content-Disposition": f'inline; filename="{download_name}"'}
-    return StreamingResponse(f, media_type="application/pdf", headers=headers)
+    def chunks():
+        try:
+            with open(pdf_file, "rb") as f:
+                while True:
+                    chunk = f.read(1024 * 256)
+                    if not chunk:
+                        break
+                    yield chunk
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to stream PDF: {type(e).__name__}: {e}",
+            )
+
+    return StreamingResponse(chunks(), media_type="application/pdf", headers=_pdf_headers(download_name, as_attachment))
+
+
+def _report_processing_response(detail: str = "Report is still processing") -> JSONResponse:
+    return JSONResponse(
+        status_code=202,
+        content={
+            "status": "processing",
+            "detail": detail,
+        },
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 def _safe_reports_path(reports_dir: Path, raw_name: str) -> Path:
@@ -115,6 +144,12 @@ def _regenerate_pdf_if_possible(candidate_id: str, applicant: dict, assessment: 
     return pdf_filename
 
 
+def _candidate_download_name(candidate_id: str, item: dict) -> str:
+    safe_name = (item.get("applicant_name") or "Applicant").strip()
+    safe_name = "".join(ch for ch in safe_name if ch.isalnum() or ch in (" ", "-", "_")).strip().replace(" ", "_")
+    return f"{safe_name or 'Applicant'}_{candidate_id}.pdf"
+
+
 @router.get("/by-assessment/{assessment_id}")
 def get_pdf_by_assessment(assessment_id: str, emp=Depends(require_employer)):
     a = db.get_assessment(assessment_id)
@@ -179,14 +214,13 @@ from fastapi import Depends
 from app.auth import require_employer
 from app.services import db
 
-@router.get("/by-candidate/{candidate_id}")
-def get_pdf_by_candidate(candidate_id: str, emp=Depends(require_employer)):
+def _resolve_candidate_pdf(candidate_id: str, emp: dict):
     import logging
     logger = logging.getLogger("uvicorn.error")
-    
+
     logger.info(f"PDF request for candidate: {candidate_id}")
     logger.info(f"Employer: {emp.get('employer_id')}")
-    
+
     item = db.get_applicant(candidate_id)
     if not item:
         logger.error(f"Applicant not found: {candidate_id}")
@@ -210,9 +244,25 @@ def get_pdf_by_candidate(candidate_id: str, emp=Depends(require_employer)):
         logger.error(f"Forbidden: assessment employer {a.get('employer_id')} != logged in employer {emp.get('employer_id')}")
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    if item.get("pdf_status") != "success":
-        logger.error(f"PDF not ready: status={item.get('pdf_status')}, filename={item.get('pdf_filename')}")
-        raise HTTPException(status_code=404, detail="PDF not ready")
+    pdf_status = (item.get("pdf_status") or "").strip().lower()
+
+    if pdf_status != "success":
+        logger.warning(
+            "PDF not marked success for %s: status=%s filename=%s; attempting regeneration if score_json exists",
+            candidate_id,
+            item.get("pdf_status"),
+            item.get("pdf_filename"),
+        )
+        regenerated = _regenerate_pdf_if_possible(candidate_id, item, a)
+        if regenerated:
+            pdf_filename = regenerated
+            pdf_file = _safe_reports_path(REPORTS_DIR, pdf_filename)
+            if pdf_file.exists():
+                logger.info("Regenerated PDF for %s from non-success status: %s", candidate_id, pdf_filename)
+                return item, pdf_file, _candidate_download_name(candidate_id, item)
+
+        logger.info("PDF still processing for %s; score_json_available=%s", candidate_id, bool(_parse_json_field(item.get("score_json"))))
+        return _report_processing_response()
 
     pdf_filename = (item.get("pdf_filename") or "").strip()
     pdf_file = _safe_reports_path(REPORTS_DIR, pdf_filename) if pdf_filename else Path("")
@@ -239,5 +289,31 @@ def get_pdf_by_candidate(candidate_id: str, emp=Depends(require_employer)):
         raise HTTPException(status_code=404, detail="PDF missing on server")
 
     logger.info(f"Streaming PDF: {pdf_filename}")
-    return _stream_pdf(pdf_file, pdf_filename)
+    return item, pdf_file, _candidate_download_name(candidate_id, item)
+
+
+@router.head("/by-candidate/{candidate_id}")
+def head_pdf_by_candidate(candidate_id: str, download: str | None = None, emp=Depends(require_employer)):
+    result = _resolve_candidate_pdf(candidate_id, emp)
+    if isinstance(result, JSONResponse):
+        return result
+
+    _, _, download_name = result
+    as_attachment = str(download or "").strip() == "1"
+    return Response(
+        status_code=200,
+        media_type="application/pdf",
+        headers=_pdf_headers(download_name, as_attachment),
+    )
+
+
+@router.get("/by-candidate/{candidate_id}")
+def get_pdf_by_candidate(candidate_id: str, download: str | None = None, emp=Depends(require_employer)):
+    result = _resolve_candidate_pdf(candidate_id, emp)
+    if isinstance(result, JSONResponse):
+        return result
+
+    _, pdf_file, download_name = result
+    as_attachment = str(download or "").strip() == "1"
+    return _stream_pdf(pdf_file, download_name, as_attachment=as_attachment)
 # ---- End added route ----

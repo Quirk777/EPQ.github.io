@@ -9,6 +9,21 @@ function dispositionFor(req: NextRequest, candidateId: string) {
   return `${mode}; filename="candidate_${candidateId}_report.pdf"`;
 }
 
+function processingResponse(status = 202) {
+  return NextResponse.json(
+    {
+      status: "processing",
+      detail: "Report is still processing. Please try again in a moment.",
+    },
+    {
+      status,
+      headers: {
+        "Cache-Control": "private, no-store",
+      },
+    }
+  );
+}
+
 function cookieHeaderFromRequest(req: NextRequest): string {
   try {
     const parts: string[] = [];
@@ -70,6 +85,10 @@ export async function HEAD(
 
   try {
     const response = await backendFetch(req, backendUrl);
+    if (response.status === 202) {
+      return processingResponse();
+    }
+
     if (!response.ok) {
       const msg = await toPlainTextError(response);
       return new NextResponse(msg, {
@@ -79,6 +98,11 @@ export async function HEAD(
           "Cache-Control": "private, no-store",
         },
       });
+    }
+
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.includes("application/pdf")) {
+      return processingResponse(202);
     }
 
     return new NextResponse(null, {
@@ -113,6 +137,10 @@ export async function GET(
 
     const response = await backendFetch(req, backendUrl);
 
+    if (response.status === 202) {
+      return processingResponse();
+    }
+
     if (!response.ok) {
       const msg = await toPlainTextError(response);
       return new NextResponse(msg, {
@@ -122,6 +150,11 @@ export async function GET(
           "Cache-Control": "private, no-store",
         },
       });
+    }
+
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.includes("application/pdf")) {
+      return processingResponse(202);
     }
 
     const pdfBuffer = await response.arrayBuffer();

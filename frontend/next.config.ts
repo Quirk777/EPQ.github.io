@@ -37,6 +37,13 @@ const nextConfig = {
         destination: `${apiUrl}/api/employer/roles/:path*`,
       },
 
+      // PDF reports live outside the backend /employer namespace.
+      // Keep this before the broad employer catch-all so View/Download do not 404.
+      {
+        source: "/api/employer/pdf/:candidate_id",
+        destination: `${apiUrl}/reports/by-candidate/:candidate_id`,
+      },
+
       // Other employer API routes (backend has NO /api prefix)
       {
         source: "/api/employer/:path*",

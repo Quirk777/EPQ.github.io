@@ -25,6 +25,7 @@ export default function PDFViewerClient() {
   const pdfUrl = typeof window === "undefined" ? rawPdfUrl : safePdfPath(rawPdfUrl);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   const displayUrl = useMemo(() => {
     if (!pdfUrl) return "";
@@ -53,8 +54,13 @@ export default function PDFViewerClient() {
       if (!pdfUrl) return;
       setReady(false);
       setLoadError(null);
+      setProcessing(false);
       try {
         const res = await fetch(pdfUrl, { method: "HEAD", credentials: "include" });
+        if (res.status === 202) {
+          if (!cancelled) setProcessing(true);
+          return;
+        }
         if (!res.ok) {
           const msg = (await res.text().catch(() => "")) || res.statusText || "PDF not available";
           if (!cancelled) setLoadError(`[${res.status}] ${msg}`);
@@ -106,6 +112,27 @@ export default function PDFViewerClient() {
             <button onClick={handleDownload} style={s.toolbarBtn as React.CSSProperties}>
               Download PDF
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (processing) {
+    return (
+      <div style={s.page}>
+        <div style={s.errorContainer}>
+          <h1 style={s.errorTitle}>Report still processing</h1>
+          <p style={s.errorBody}>
+            EPQ has received this applicant submission and is preparing the PDF report. Please refresh in a moment.
+          </p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+            <button onClick={() => window.location.reload()} style={s.btnPrimary}>
+              Refresh Report
+            </button>
+            <Link href="/employer/dashboard" style={s.toolbarBtn}>
+              Return to Dashboard
+            </Link>
           </div>
         </div>
       </div>

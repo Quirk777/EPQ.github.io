@@ -217,8 +217,7 @@ def generate_pdf_report(
     # ---------- horizontal bar chart ----------
     fig, ax = plt.subplots(figsize=(9, 5.2))
 
-    palette = plt.get_cmap("tab20").colors
-    bar_colors = [palette[i % len(palette)] for i in range(len(labels))]
+    bar_colors = ["#4f6f93", "#6f8f7a", "#8e7d9f", "#9f8f68", "#7f8fa6", "#8a6f76", "#5f7f83", "#8f785f"]
 
     # Reverse so first item appears at top
     labels_rev = list(reversed(labels))
@@ -231,8 +230,10 @@ def generate_pdf_report(
     for y, v in enumerate(sizes_rev):
         ax.text(v + 0.03, y, f"{v:.2f}", va="center", fontsize=9)
 
-    ax.set_title("Construct Averages" if not no_scores else "Construct Averages (No Data)", fontsize=16)
-    ax.set_xlabel("Average Score")
+    ax.set_title("EPQ Work Environment Profile" if not no_scores else "EPQ Work Environment Profile (No Scored Data)", fontsize=16)
+    ax.set_xlabel("Average response score (1-4)")
+    ax.grid(axis="x", alpha=0.18)
+    ax.spines[["top", "right", "left"]].set_visible(False)
 
     maxv = max(sizes_rev) if sizes_rev else 1.0
     ax.set_xlim(0, max(1.0, maxv * 1.25))
@@ -250,6 +251,13 @@ def generate_pdf_report(
     key_strengths = []
     development_opportunities = []
     interview_prompts = []
+
+    def band_label(avg: float) -> tuple[str, str]:
+        if avg >= 2.7:
+            return ("Higher", "Higher tolerance or preference for this workplace demand.")
+        if avg >= 2.0:
+            return ("Balanced", "Flexible range; likely to adapt with normal manager context.")
+        return ("Lower", "Preference for clearer supports or lower load in this area.")
 
     if no_scores:
         table_rows_html = (
@@ -277,12 +285,7 @@ def generate_pdf_report(
 
             avg = _get_avg(k)
 
-            if avg >= 2.7:
-                band = "High"
-            elif avg >= 2.0:
-                band = "Moderate"
-            else:
-                band = "Low"
+            band, band_meaning = band_label(avg)
 
             env_key = str(employer_environment).capitalize()
             feedback_text = ""
@@ -294,38 +297,38 @@ def generate_pdf_report(
                 )
 
             if not feedback_text:
-                if band == "High":
-                    feedback_text = abbr + " indicates higher tolerance or preference for this environmental demand."
-                elif band == "Moderate":
-                    feedback_text = abbr + " indicates flexibility and reasonable tolerance across environments."
+                if band == "Higher":
+                    feedback_text = abbr + " suggests comfort with higher demand in this work-environment area."
+                elif band == "Balanced":
+                    feedback_text = abbr + " suggests a flexible, moderate preference that can adapt to reasonable variation."
                 else:
-                    feedback_text = abbr + " indicates preference for lower environmental load in this domain."
+                    feedback_text = abbr + " suggests the candidate may work best with clearer structure or lighter demand in this area."
 
-            if band == "High":
-                positive = "Likely to perform strongly where " + canonical_full.lower() + " is expected."
-                setback = "Low risk in most employer environments."
-                mitigation = "Leverage this strength in role design and responsibilities."
+            if band == "Higher":
+                positive = "Useful signal for roles where " + canonical_full.lower() + " is a regular part of the work."
+                setback = "Avoid assuming this is universally better; very high demand can still create fatigue without prioritization."
+                mitigation = "Use this as a role-design strength and confirm examples during interview."
                 key_strengths.append(abbr + ": comfortable with higher " + canonical_full.lower() + ".")
-            elif band == "Moderate":
-                positive = "Performs well with clear expectations; adapts when demands shift."
-                setback = "May prefer short checkpoints during spikes in demand."
-                mitigation = "Provide brief SOPs and regular check-ins during onboarding."
-                development_opportunities.append(abbr + ": benefits from concise process cues.")
+            elif band == "Balanced":
+                positive = "Likely to adapt when expectations are clear and workload is managed."
+                setback = "May benefit from brief check-ins if this demand spikes quickly."
+                mitigation = "Provide concise expectations and review cadence during onboarding."
+                development_opportunities.append(abbr + ": use concise expectations and normal manager check-ins.")
             else:
-                positive = "Performs best with structured supports in this domain."
-                setback = "Possible friction where high " + canonical_full.lower() + " is demanded from day one."
-                mitigation = "Use checklists, paired mentoring, and short focused training."
-                development_opportunities.append(abbr + ": provide structured onboarding and checklists.")
+                positive = "Can perform well when role expectations and supports are explicit."
+                setback = "Possible friction if high " + canonical_full.lower() + " is required immediately without support."
+                mitigation = "Use checklists, paired mentoring, examples of good work, and short focused training."
+                development_opportunities.append(abbr + ": provide structured onboarding, examples, and checklists.")
 
             interview_prompts.append("Describe a time when " + canonical_full.lower() + " mattered and how you handled it.")
 
             table_rows_html += (
                 "<tr>"
                 "<td><strong style='font-size:14px'>" + abbr + "</strong><div style='font-size:11px;color:#555'>" + canonical_full + "</div></td>"
-                "<td class='avg'>" + format(avg, ".2f") + "</td>"
-                "<td>" + _fix_mojibake(feedback_text) + "</td>"
-                "<td>" + _fix_mojibake(positive) + "</td>"
-                "<td>" + _fix_mojibake(setback) + "<br><em>Mitigation:</em> " + _fix_mojibake(mitigation) + "</td>"
+                "<td class='avg'>" + format(avg, ".2f") + "<div class='band'>" + html_escape(band) + "</div></td>"
+                "<td><strong>" + html_escape(band_meaning) + "</strong><br>" + html_escape(_fix_mojibake(feedback_text)) + "</td>"
+                "<td>" + html_escape(_fix_mojibake(positive)) + "</td>"
+                "<td>" + html_escape(_fix_mojibake(setback)) + "<br><em>Suggested support:</em> " + html_escape(_fix_mojibake(mitigation)) + "</td>"
                 "</tr>\n"
             )
 
@@ -343,22 +346,23 @@ def generate_pdf_report(
     combined_prompts = (interview_prompts[:4] + generic_prompts)[:8]
 
     plan_html = (
-        "<strong>0-30 days:</strong> Orientation, mentor pairing, 1 small deliverable, and clear checkpoints.<br>"
-        "<strong>31-60 days:</strong> Independent ownership of core tasks, midpoint feedback, continued learning.<br>"
-        "<strong>61-90 days:</strong> Full responsibility and a short process improvement presentation."
+        "<strong>0-30 days:</strong> Confirm role expectations, pair with a mentor, define one measurable early deliverable, and schedule short checkpoints.<br>"
+        "<strong>31-60 days:</strong> Expand ownership of core tasks, review workload fit, and adjust support based on observed friction points.<br>"
+        "<strong>61-90 days:</strong> Move toward fuller responsibility and ask the candidate to present one process improvement or learning insight."
     )
 
     training_html = (
         "<ul>"
-        "<li>Half-day role tools and systems workshop.</li>"
-        "<li>Weekly 30-minute mentor check-ins for the first 6 weeks.</li>"
-        "<li>Short targeted training modules to address specific low-average constructs.</li>"
+        "<li>Role tools and systems walkthrough focused on the first two weeks of work.</li>"
+        "<li>Weekly 30-minute mentor check-ins for the first six weeks.</li>"
+        "<li>Targeted training or examples for any lower-scoring environmental demand that is critical to the role.</li>"
         "</ul>"
     )
 
     risk_flags_html = (
-        "If the role demands extreme procedural precision from day one, provide checklists and SOPs during onboarding. "
-        "Monitor workload and check for signs of stress or disengagement in areas flagged with Low averages."
+        "Use lower or higher scores as prompts for role-fit discussion, not as automatic risks. "
+        "If the role requires immediate high load in a lower-preference area, provide checklists, examples, and manager check-ins during onboarding. "
+        "Watch for workload friction, unclear expectations, or avoidable stress in the first 30 days."
     )
 
     glossary_html = ""
@@ -378,10 +382,10 @@ def generate_pdf_report(
 
     bands_table_html = (
         "<table style='margin-top:8px;'>"
-        "<tr><th style='width:200px'>Band</th><th>Average Score</th><th>Role Range (questions)</th></tr>"
-        "<tr><td><strong>Core Preference</strong></td><td>&lt;= 2.0</td><td>Questions 1-25</td></tr>"
-        "<tr><td><strong>Standard Preference</strong></td><td>2.1-2.9</td><td>Questions 1-32</td></tr>"
-        "<tr><td><strong>Advanced Preference</strong></td><td>&gt;= 3.0</td><td>Questions 1-50</td></tr>"
+        "<tr><th style='width:180px'>Band</th><th>Average Score</th><th>How to read it</th></tr>"
+        "<tr><td><strong>Lower</strong></td><td>&lt; 2.0</td><td>Likely preference for lower load, clearer structure, or additional support in this area.</td></tr>"
+        "<tr><td><strong>Balanced</strong></td><td>2.0-2.69</td><td>Flexible range; usually workable with clear expectations and normal manager context.</td></tr>"
+        "<tr><td><strong>Higher</strong></td><td>&gt;= 2.7</td><td>Likely comfort with higher demand in this area; still validate with examples.</td></tr>"
         "</table>"
     )
 
@@ -392,11 +396,11 @@ def generate_pdf_report(
         overall_band = overall_band_from_result
     else:
         if overall_avg >= 3.0:
-            overall_band = "High"
+            overall_band = "Higher"
         elif overall_avg >= 2.0:
-            overall_band = "Moderate"
+            overall_band = "Balanced"
         else:
-            overall_band = "Low"
+            overall_band = "Lower"
 
     no_scores_banner = ""
     if no_scores:
@@ -421,35 +425,76 @@ def generate_pdf_report(
       <meta charset="utf-8">
       <title>EPQ Applicant Report - {candidate_id}</title>
       <style>
-        body {{ font-family: Arial, sans-serif; margin: 28px; color: #222; font-size: 15px; line-height:1.55; }}
-        h1 {{ font-size: 26px; margin-bottom:6px; }}
-        h2 {{ font-size: 20px; margin-top:18px; }}
-        table {{ border-collapse: collapse; width: 100%; margin-top:10px; }}
-        th, td {{ border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; font-size: 15px; }}
-        th {{ background-color: #f7f7f7; font-weight:600; }}
-        td.avg {{ font-weight:700; width:70px; text-align:center; }}
-        img {{ max-width: 100%; height: auto; display: block; margin: 12px auto; }}
-        p, ul, ol {{ font-size: 17px; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: Arial, sans-serif; margin: 18px 22px; color: #1f2933; font-size: 12px; line-height:1.38; }}
+        h1 {{ font-size: 24px; margin: 0 0 4px; color: #12131a; letter-spacing: -0.2px; }}
+        h2 {{ font-size: 15px; margin: 16px 0 7px; color: #12131a; }}
+        h3 {{ font-size: 13px; margin: 12px 0 6px; color: #293241; }}
+        p {{ margin: 0 0 8px; }}
+        ul, ol {{ margin-top: 8px; padding-left: 20px; }}
+        li {{ margin-bottom: 4px; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top:8px; page-break-inside: auto; }}
+        th, td {{ border: 1px solid #d9dee7; padding: 7px 8px; text-align: left; vertical-align: top; font-size: 11px; }}
+        th {{ background-color: #f4f6f8; font-weight:700; color: #293241; }}
+        td.avg {{ font-weight:700; width:82px; text-align:center; }}
+        .band {{ margin-top: 4px; font-size: 10px; color: #5d6b7a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }}
+        img {{ max-width: 92%; height: auto; display: block; margin: 8px auto; }}
+        .meta {{ color:#5d6b7a; font-size:11px; margin-bottom: 10px; }}
+        .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 11px; margin: 10px 0; }}
+        .summary-grid {{ display: table; width: 100%; table-layout: fixed; margin-top: 8px; }}
+        .summary-cell {{ display: table-cell; padding: 8px; border-right: 1px solid #d9dee7; }}
+        .summary-cell:last-child {{ border-right: 0; }}
+        .summary-label {{ font-size:10px; text-transform: uppercase; letter-spacing:0.08em; color:#6b7684; font-weight:700; }}
+        .summary-value {{ font-size:18px; color:#12131a; font-weight:800; margin-top:3px; }}
+        .note {{ border-left: 4px solid #6f8f7a; background:#f4f8f5; padding: 8px 10px; margin: 10px 0; color:#304438; }}
+        .disclaimer {{ border: 1px solid #d9dee7; background:#fbfbfc; padding: 9px 10px; margin-top: 12px; font-size: 10px; color:#4d5967; }}
+        .section-grid {{ display: table; width: 100%; table-layout: fixed; border-spacing: 10px 0; margin-top: 6px; }}
+        .section-cell {{ display: table-cell; width: 50%; vertical-align: top; border: 1px solid #d9dee7; border-radius: 8px; background: #ffffff; padding: 10px 12px; }}
+        .action-box {{ border: 1px solid #d9dee7; background: #f7f9fb; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }}
+        .compact-heading {{ margin-top: 0; }}
       </style>
     </head>
     <body>
       <h1>EPQ Applicant Report</h1>
-    <div><strong>Applicant:</strong> {safe_app_name or "—"} &nbsp;&nbsp; <strong>Candidate ID:</strong> {html_escape(str(candidate_id))} &nbsp;&nbsp; <strong>Date:</strong> {html_escape(str(timestamp))}</div>
+      <div class="meta"><strong>Applicant:</strong> {safe_app_name or "—"} &nbsp;&nbsp; <strong>Candidate ID:</strong> {html_escape(str(candidate_id))} &nbsp;&nbsp; <strong>Generated:</strong> {html_escape(str(timestamp))}</div>
 
+      <div class="summary">
+        <h2 style="margin-top:0">Executive Snapshot</h2>
+        <p>
+          EPQ summarizes how this applicant appears to prefer or tolerate different work-environment demands.
+          It is designed to support structured employer conversations, onboarding planning, and role-fit review.
+        </p>
+        <div class="summary-grid">
+          <div class="summary-cell">
+            <div class="summary-label">Overall average</div>
+            <div class="summary-value">{overall_avg:.2f}</div>
+          </div>
+          <div class="summary-cell">
+            <div class="summary-label">Profile band</div>
+            <div class="summary-value">{html_escape(str(overall_band))}</div>
+          </div>
+          <div class="summary-cell">
+            <div class="summary-label">Role environment</div>
+            <div class="summary-value" style="font-size:17px">{html_escape(str(employer_environment).capitalize())}</div>
+          </div>
+        </div>
+      </div>
 
-      <h2>Environmental Fit Summary ({str(employer_environment).capitalize()} environment)</h2>
-      <p>This report focuses on environmental fit: how the applicant's construct averages align with the employer's role-defined demands.</p>
+      <div class="note">
+        <strong>How to use this report:</strong> Treat the scores as work-environment preference signals.
+        They are not pass/fail results, clinical findings, medical assessments, or a substitute for structured interviewing.
+      </div>
 
       {no_scores_banner}
 
-      <h2>Construct Averages and Employer Implications</h2>
+      <h2>Construct Scores and Employer Interpretation</h2>
       <table>
         <tr>
-          <th>Construct (ABBR)</th>
-          <th>Avg</th>
-          <th>Employer Interpretation</th>
-          <th>Positive Implications</th>
-          <th>Potential Setbacks and Mitigations</th>
+          <th>Construct</th>
+          <th>Score</th>
+          <th>Interpretation</th>
+          <th>Employer Use</th>
+          <th>Support Plan</th>
         </tr>
         {table_rows_html}
       </table>
@@ -459,26 +504,32 @@ def generate_pdf_report(
 
       <div style="page-break-after:always;"></div>
 
-      <h2>Executive Summary</h2>
+      <div class="section-grid">
+        <div class="section-cell">
+          <h2 class="compact-heading">Likely Strengths to Explore</h2>
+          <ul>{"".join(f"<li>{html_escape(_fix_mojibake(s))}</li>" for s in key_strengths[:5])}</ul>
+        </div>
+        <div class="section-cell">
+          <h2 class="compact-heading">Onboarding Supports to Consider</h2>
+          <ul>{"".join(f"<li>{html_escape(_fix_mojibake(s))}</li>" for s in development_opportunities[:5])}</ul>
+        </div>
+      </div>
+
+      <h2>Employer Interpretation</h2>
       <p>
-        The candidate produces an overall construct average of <strong>{overall_avg:.2f}</strong>
-        (<strong>{overall_band}</strong> fit band). Recommended for roles requiring initiative, teamwork, and flexibility.
+        A higher score is not automatically better, and a lower score is not automatically worse.
+        The useful question is whether the role's daily environment matches the candidate's preferred level of structure,
+        ambiguity, collaboration, autonomy, change, and emotional load. Use this report to shape interview questions,
+        clarify role expectations, and design a fair onboarding plan.
       </p>
 
-      <h2>Key Strengths</h2>
-      <ul>{"".join(f"<li>{_fix_mojibake(s)}</li>" for s in key_strengths)}</ul>
-
-      <h2>Development Opportunities (positive framing)</h2>
-      <ul>{"".join(f"<li>{_fix_mojibake(s)}</li>" for s in development_opportunities)}</ul>
-
-      <h2>Role Fit and Recommendations</h2>
-      <p>Best fits: Project coordinator, operations support, or associate roles in dynamic teams. Place on cross-functional projects to leverage adaptability.</p>
-
       <h2>Actionable Interview Prompts</h2>
-      <ol>{"".join(f"<li>{_fix_mojibake(p)}</li>" for p in combined_prompts)}</ol>
+      <ol>{"".join(f"<li>{html_escape(_fix_mojibake(p))}</li>" for p in combined_prompts)}</ol>
 
-      <h2>30-60-90 Day Onboarding Plan</h2>
-      <p>{plan_html}</p>
+      <div class="action-box">
+        <h2 class="compact-heading">30-60-90 Day Onboarding Plan</h2>
+        <p>{plan_html}</p>
+      </div>
 
       <h2>Training and Growth Suggestions</h2>
       {training_html}
@@ -486,15 +537,22 @@ def generate_pdf_report(
       <h2>Risk Flags and Mitigation</h2>
       <p>{risk_flags_html}</p>
 
-      <h2>Employer Interpretation Guide</h2>
-      <p>See glossary below for construct explanations and interpretation bands.</p>
+      <h2>Score Guide</h2>
+      <p>Use bands as conversation prompts and onboarding inputs. Validate important signals with examples from the candidate's experience.</p>
 
       {bands_table_html}
 
+      <h2>Construct Glossary</h2>
       <table>
         <tr><th>ABBR</th><th>Full Name</th><th>Short Meaning</th></tr>
         {glossary_html}
       </table>
+
+      <div class="disclaimer">
+        <strong>Important:</strong> EPQ is an employment decision-support tool focused on work-environment preferences and demands.
+        It should be used alongside structured interviews, job-relevant evidence, and consistent hiring criteria.
+        Do not use this report as a medical, psychological, disability, or clinical diagnosis, and do not treat it as a pass/fail hiring decision.
+      </div>
     </body>
     </html>
     """

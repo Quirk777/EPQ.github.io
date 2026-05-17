@@ -4,19 +4,32 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 
+function safePdfPath(url: string) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin !== window.location.origin) return "";
+    if (!parsed.pathname.startsWith("/api/employer/pdf/")) return "";
+    return parsed.pathname;
+  } catch {
+    return "";
+  }
+}
+
 export default function PDFViewerClient() {
   const searchParams = useSearchParams();
-  const pdfUrl = searchParams?.get("url") || "";
+  const rawPdfUrl = searchParams?.get("url") || "";
   const candidateName = searchParams?.get("name") || "Candidate";
   
   const [showControls, setShowControls] = useState(true);
+  const pdfUrl = typeof window === "undefined" ? rawPdfUrl : safePdfPath(rawPdfUrl);
 
-  // Add parameters to help browsers display PDF inline
-  const displayUrl = pdfUrl ? `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0` : "";
+  const displayUrl = pdfUrl ? `${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH` : "";
+  const downloadUrl = pdfUrl ? `${pdfUrl}?download=1` : "";
 
   const handleDownload = () => {
     const link = document.createElement("a");
-    link.href = pdfUrl;
+    link.href = downloadUrl;
     link.download = `${candidateName.replace(/\s+/g, "_")}_Report.pdf`;
     document.body.appendChild(link);
     link.click();
@@ -67,7 +80,7 @@ export default function PDFViewerClient() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
             </svg>
-            Download
+            Download PDF
           </button>
 
           <button 
@@ -87,19 +100,26 @@ export default function PDFViewerClient() {
       </div>
 
       {/* PDF Viewer */}
-      <iframe
-        id="pdf-viewer"
-        src={displayUrl}
-        title="PDF Report"
-        style={s.iframe}
-      />
-      
-      {/* Fallback for browsers that don't support PDF display */}
-      <div style={s.fallback}>
-        <p>If the PDF doesn't display above, you can:</p>
-        <button onClick={handleDownload} style={s.btnPrimary}>
-          Download PDF
-        </button>
+      <div style={s.viewerShell}>
+        <object
+          data={displayUrl}
+          type="application/pdf"
+          style={s.pdfObject}
+          aria-label="PDF report preview"
+        >
+          <iframe
+            id="pdf-viewer"
+            src={displayUrl}
+            title="PDF Report"
+            style={s.iframe}
+          />
+          <div style={s.fallback}>
+            <p style={s.fallbackText}>The PDF preview is not available in this browser.</p>
+            <button onClick={handleDownload} style={s.btnPrimary}>
+              Download PDF
+            </button>
+          </div>
+        </object>
       </div>
     </div>
   );
@@ -112,7 +132,7 @@ const s = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#1e293b",
+    backgroundColor: "var(--surface-0)",
     display: "flex",
     flexDirection: "column" as const,
   },
@@ -121,8 +141,8 @@ const s = {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "12px 20px",
-    backgroundColor: "#0f172a",
-    borderBottom: "1px solid #334155",
+    backgroundColor: "var(--surface-1)",
+    borderBottom: "1px solid var(--border-default)",
     transition: "opacity 0.3s ease",
     zIndex: 10,
   },
@@ -139,7 +159,7 @@ const s = {
   toolbarTitle: {
     fontSize: 16,
     fontWeight: 600,
-    color: "#f8fafc",
+    color: "var(--text-primary)",
     margin: 0,
   },
   toolbarBtn: {
@@ -148,9 +168,9 @@ const s = {
     gap: 8,
     padding: "8px 14px",
     borderRadius: 8,
-    border: "1px solid #475569",
-    backgroundColor: "#334155",
-    color: "#f8fafc",
+    border: "1px solid var(--border-default)",
+    backgroundColor: "var(--surface-2)",
+    color: "var(--text-primary)",
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
@@ -162,6 +182,21 @@ const s = {
     border: "none",
     width: "100%",
     height: "100%",
+    background: "#ffffff",
+  } as React.CSSProperties,
+  viewerShell: {
+    flex: 1,
+    padding: 16,
+    background: "var(--surface-0)",
+    minHeight: 0,
+  } as React.CSSProperties,
+  pdfObject: {
+    width: "100%",
+    height: "100%",
+    minHeight: 0,
+    border: "1px solid var(--border-default)",
+    borderRadius: 8,
+    background: "#ffffff",
   } as React.CSSProperties,
   fallback: {
     display: "flex",
@@ -170,8 +205,13 @@ const s = {
     justifyContent: "center",
     gap: 20,
     padding: 40,
-    backgroundColor: "#0f172a",
+    height: "100%",
+    backgroundColor: "var(--surface-1)",
   } as React.CSSProperties,
+  fallbackText: {
+    color: "var(--text-secondary)",
+    margin: 0,
+  },
   errorContainer: {
     display: "flex",
     flexDirection: "column" as const,
@@ -184,15 +224,15 @@ const s = {
   errorTitle: {
     fontSize: 24,
     fontWeight: 700,
-    color: "#f8fafc",
+    color: "var(--text-primary)",
     margin: 0,
   },
   btnPrimary: {
     padding: "12px 20px",
     borderRadius: 8,
-    border: "none",
-    backgroundColor: "#3b82f6",
-    color: "white",
+    backgroundColor: "var(--accent-blue-glow)",
+    border: "1px solid var(--accent-blue-dim)",
+    color: "var(--accent-blue)",
     fontSize: 15,
     fontWeight: 600,
     cursor: "pointer",

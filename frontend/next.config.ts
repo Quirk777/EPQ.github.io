@@ -7,12 +7,6 @@ const nextConfig = {
       (isProd ? "http://backend:8001" : "http://127.0.0.1:8001");
     
     return [
-      // PDF click: map your dashboard URL to the REAL backend PDF route
-      {
-        source: "/api/employer/pdf/:candidate_id",
-        destination: `${apiUrl}/applicant/reports/by-candidate/:candidate_id`,
-      },
-
       // Applicant flow
       {
         source: "/api/applicant/:aid/questions",

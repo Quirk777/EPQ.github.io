@@ -4,6 +4,11 @@ import { getBackendBaseUrl } from "../../../_proxy";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function dispositionFor(req: NextRequest, candidateId: string) {
+  const mode = req.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
+  return `${mode}; filename="candidate_${candidateId}_report.pdf"`;
+}
+
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ candidate_id: string }> }
@@ -36,8 +41,8 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="candidate_${candidate_id}_report.pdf"`,
-        "Cache-Control": "public, max-age=3600",
+        "Content-Disposition": dispositionFor(req, candidate_id),
+        "Cache-Control": "private, max-age=300",
         "X-Content-Type-Options": "nosniff",
       },
     });

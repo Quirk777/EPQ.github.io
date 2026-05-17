@@ -98,24 +98,24 @@ function buildSteps(): TourStep[] {
       data: { route: "/employer/analytics" },
     },
     {
-      target: targetFor('[data-tour="branding-header"]', "body"),
+      target: targetFor('[data-tour="branding-upload"]', '[data-tour="branding-header"]', "body"),
       title: "Branding section",
       content: "Company Branding lets employers prepare the workspace for a more polished applicant and employer experience.",
-      placement: "auto",
+      placement: "center",
       data: { route: "/employer/settings/branding" },
     },
     {
-      target: targetFor('[data-tour="branding-upload"]', '[data-tour="branding-header"]', "body"),
+      target: targetFor('[data-tour="branding-upload"]', "body"),
       title: "Branding setup",
       content: "Logo upload and report branding are part of the trust layer. Some report branding may remain Coming Soon depending on your demo environment.",
-      placement: "auto",
+      placement: "center",
       data: { route: "/employer/settings/branding" },
     },
     {
       target: targetFor('[data-tour="dashboard-header"]', "body"),
       title: "Tour complete",
       content: "The main story is: create a role, configure EPQ, share the applicant link, review submissions, open reports, and show the expanding modules around that core workflow.",
-      placement: "auto",
+      placement: "center",
       data: { route: "/employer/dashboard" },
     },
   ];
@@ -295,6 +295,7 @@ export default function DemoWalkthrough() {
           fontSize: 14,
           maxWidth: "calc(100vw - 32px)",
           overflowWrap: "break-word",
+          wordBreak: "normal",
         },
         tooltipTitle: {
           color: "var(--text-primary)",

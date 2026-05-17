@@ -369,7 +369,7 @@ export default function ModulesClient() {
       </header>
 
       {/* Hero Section */}
-      <section style={s.hero}>
+      <section data-tour="modules-hero" style={s.hero}>
         <div style={s.container}>
           <div style={s.heroGlass} className="texture-surface-2">
             <div style={s.heroContent}>
@@ -479,7 +479,7 @@ export default function ModulesClient() {
       </section>
 
       {/* Active Modules Section */}
-      <section style={s.modulesSection}>
+      <section data-tour="modules-active" style={s.modulesSection}>
         <div style={s.container}>
           <div style={s.sectionHeader}>
             <h2 style={s.sectionTitle}>
@@ -546,7 +546,7 @@ export default function ModulesClient() {
 
       {/* Upcoming Modules Section */}
       {(activeTab === "all" || activeTab === "coming") && filteredUpcoming.length > 0 && (
-        <section style={s.upcomingSection}>
+        <section data-tour="modules-coming-soon" style={s.upcomingSection}>
           <div style={s.container}>
             <div style={s.sectionHeader}>
               <div style={s.roadmapBadge}>Roadmap</div>

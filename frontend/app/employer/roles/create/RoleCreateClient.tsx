@@ -165,20 +165,18 @@ export default function RoleCreateClient() {
     setError(null);
 
     try {
+      const trimmedRoleTitle = roleTitle.trim();
+      if (!trimmedRoleTitle) {
+        throw new Error("Role title is required");
+      }
       const payload = {
-        name: roleTitle,
-        title: roleTitle,
-        team,
-        level,
-        hiring_manager: hiringManager,
-        environment: Object.fromEntries(environment.map(e => [e.id, e.value])),
-        environment_confidence: conflicts.length === 0 ? "high" : "medium",
-        environment_conflicts: conflicts
+        name: trimmedRoleTitle
       };
 
       const res = await fetch("/api/employer/roles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload)
       });
 
@@ -187,7 +185,13 @@ export default function RoleCreateClient() {
         throw new Error(data.detail || "Failed to create role");
       }
 
-      router.push("/employer/modules");
+      const data = await res.json().catch(() => ({}));
+      try {
+        if (data?.role_id) {
+          window.localStorage.setItem("latest_role_id", data.role_id);
+        }
+      } catch {}
+      router.push("/employer/dashboard");
     } catch (e: unknown) {
       const error = e as Error;
       setError(error.message || "Something went wrong");

@@ -80,7 +80,7 @@ export default function AnalyticsClient() {
   return (
     <main style={s.page}>
       {/* Header */}
-      <header style={s.header}>
+      <header data-tour="analytics-header" style={s.header}>
         <div style={s.container}>
           <div style={s.headerContent}>
             <div style={s.branding}>
@@ -146,7 +146,7 @@ export default function AnalyticsClient() {
         </div>
 
         {/* Key Metrics */}
-        <div style={s.statsGrid}>
+        <div data-tour="analytics-metrics" style={s.statsGrid}>
           {stats.map((stat, idx) => (
             <div key={idx} style={s.statCard}>
               <div style={s.statHeader}>
@@ -166,7 +166,7 @@ export default function AnalyticsClient() {
         </div>
 
         {/* Conversion Funnel */}
-        <div style={s.card}>
+        <div data-tour="analytics-funnel" style={s.card}>
           <div style={s.cardHeader}>
             <div>
               <h2 style={s.cardTitle}>Conversion Funnel</h2>

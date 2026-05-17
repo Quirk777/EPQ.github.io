@@ -198,7 +198,7 @@ export default function BrandingPage() {
           </nav>
         </div>
 
-        <h1 style={{ 
+        <h1 data-tour="branding-header" style={{
           fontSize: 28, 
           fontWeight: 800, 
           marginBottom: 8, 
@@ -216,7 +216,7 @@ export default function BrandingPage() {
         </p>
 
         {/* Upload Section */}
-        <section style={styles.card} className="surface-texture-subtle">
+        <section data-tour="branding-upload" style={styles.card} className="surface-texture-subtle">
           <h2 style={{ 
             fontSize: 20, 
             fontWeight: 700, 

@@ -5,7 +5,6 @@ import Link from "next/link";
 import LoadingSpinner from "../../_components/LoadingSpinner";
 import Alert from "../../_components/Alert";
 import CompanyLogo from "../../components/CompanyLogo";
-import DemoWalkthrough from "./DemoWalkthrough";
 
 type Role = {
   role_id?: string;
@@ -97,20 +96,11 @@ export default function DashboardClient() {
   const [verificationRequired, setVerificationRequired] = React.useState(false);
   const [resendMessage, setResendMessage] = React.useState<string | null>(null);
   const [resendingVerification, setResendingVerification] = React.useState(false);
-  const [demoWalkthroughOpen, setDemoWalkthroughOpen] = React.useState(false);
 
   const [rows, setRows] = React.useState<Row[]>([]);
   
   // Comparison state
   const [selectedCandidates, setSelectedCandidates] = React.useState<string[]>([]);
-
-  React.useEffect(function () {
-    try {
-      if (window.localStorage.getItem("epq_demo_walkthrough_dismissed") !== "true") {
-        setDemoWalkthroughOpen(true);
-      }
-    } catch (e) {}
-  }, []);
 
   function toggleCandidate(candidateId: string) {
     setSelectedCandidates(prev => 
@@ -351,12 +341,6 @@ export default function DashboardClient() {
       position: "relative" as const,
       overflow: "hidden" as const,
     }} className="texture-background">
-      <DemoWalkthrough
-        open={demoWalkthroughOpen}
-        selectedRoleId={roleId}
-        onClose={function () { setDemoWalkthroughOpen(false); }}
-      />
-
       {/* Main Layout Container with Sidebar */}
       <div className="epq-dashboard-layout" style={{
         display: "flex",
@@ -365,7 +349,7 @@ export default function DashboardClient() {
         zIndex: 1,
       }}>
         {/* Left Sidebar - Roles */}
-        <aside className="epq-dashboard-sidebar texture-surface-1" style={{
+        <aside data-tour="roles-sidebar" className="epq-dashboard-sidebar texture-surface-1" style={{
           width: 320,
           flexShrink: 0,
           background: "var(--surface-1)",
@@ -436,19 +420,19 @@ export default function DashboardClient() {
                   Create your first role
                 </div>
                 <Link
+                  data-tour="create-role-empty"
                   href="/employer/roles/create"
                   style={{
                     padding: "10px 20px",
-                    borderRadius: 10,
-                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                    color: "white",
+                    borderRadius: 6,
+                    background: "var(--accent-mint-glow)",
+                    border: "1px solid var(--accent-mint-dim)",
+                    color: "var(--accent-mint)",
                     cursor: "pointer",
-                    fontWeight: 700,
+                    fontWeight: 600,
                     textDecoration: "none",
                     display: "inline-block",
                     fontSize: 13,
-                    border: "none",
-                    boxShadow: "0 4px 20px rgba(99,102,241,0.3)",
                   }}
                 >
                   Create Role
@@ -463,6 +447,7 @@ export default function DashboardClient() {
 
                   return (
                     <div
+                      data-tour="role-card"
                       key={id}
                       style={{
                         marginBottom: "var(--space-2)",
@@ -531,6 +516,7 @@ export default function DashboardClient() {
                         {/* Only show EPQ button if assessment not taken */}
                         {!r.assessment_id && !r.assessmentId && !r.has_assessment && (
                           <a
+                            data-tour="setup-epq"
                             href={`/employer/roles/${id}/setup`}
                             onClick={function(e) { e.stopPropagation(); }}
                             style={{
@@ -632,6 +618,7 @@ export default function DashboardClient() {
             borderTop: "1px solid rgba(255, 255, 255, 0.1)",
           }}>
             <Link
+              data-tour="create-role-footer"
               href="/employer/roles/create"
               style={{
                 width: "100%",
@@ -670,7 +657,7 @@ export default function DashboardClient() {
           overflow: "hidden",
         }}>
           {/* Top Header */}
-          <header style={{
+          <header data-tour="dashboard-header" style={{
             padding: "var(--space-5) var(--space-8)",
             borderBottom: "1px solid var(--border-default)",
             background: "var(--surface-1)",
@@ -691,10 +678,12 @@ export default function DashboardClient() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" as const }}>
+              <div data-tour="dashboard-actions" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" as const }}>
                 <button
                   type="button"
-                  onClick={function () { setDemoWalkthroughOpen(true); }}
+                  onClick={function () {
+                    window.dispatchEvent(new CustomEvent("epq:start-demo-tour"));
+                  }}
                   style={{
                     padding: "var(--space-2) var(--space-4)",
                     borderRadius: 6,
@@ -711,6 +700,7 @@ export default function DashboardClient() {
                 </button>
 
                 <a
+                  data-tour="profile-link"
                   href="/employer/profile"
                   style={{
                     padding: "var(--space-2) var(--space-4)",
@@ -730,6 +720,7 @@ export default function DashboardClient() {
                 </a>
 
                 <a
+                  data-tour="analytics-link"
                   href="/employer/analytics"
                   style={{
                     padding: "var(--space-2) var(--space-4)",
@@ -749,6 +740,7 @@ export default function DashboardClient() {
                 </a>
 
                 <a
+                  data-tour="modules-link"
                   href="/employer/modules"
                   style={{
                     padding: "var(--space-2) var(--space-4)",
@@ -768,6 +760,7 @@ export default function DashboardClient() {
                 </a>
 
                 <a
+                  data-tour="branding-link"
                   href="/employer/settings/branding"
                   style={{
                     padding: "var(--space-2) var(--space-4)",
@@ -815,7 +808,7 @@ export default function DashboardClient() {
           </header>
 
           {/* Main Content Area - Submissions */}
-          <div className="epq-dashboard-main" style={{
+          <div data-tour="dashboard-main" className="epq-dashboard-main" style={{
             flex: 1,
             overflowY: "auto" as const,
             padding: "var(--space-8)",
@@ -884,7 +877,7 @@ export default function DashboardClient() {
       )}
 
       {!loading && !error && rows.length === 0 && (
-        <div style={{ 
+        <div data-tour="submissions-empty" style={{
           textAlign: "center", 
           padding: "var(--space-12) var(--space-6)", 
           marginTop: "var(--space-4)", 
@@ -900,7 +893,7 @@ export default function DashboardClient() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <div className="epq-table-scroll" style={{
+        <div data-tour="submissions-table" className="epq-table-scroll" style={{
           marginTop: "var(--space-4)", 
           border: "1px solid var(--border-subtle)", 
           borderRadius: 8, 
@@ -982,7 +975,8 @@ export default function DashboardClient() {
                     </td>
                     <td style={{ padding: "var(--space-4)" }}>
                       <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                        <a 
+                        <a
+                          data-tour="candidate-details-link"
                           href={`/employer/candidates/${id}`} 
                           style={{ 
                             fontWeight: 500, 
@@ -1001,7 +995,8 @@ export default function DashboardClient() {
                           Details
                         </a>
                         {pdf && (
-                          <a 
+                          <a
+                            data-tour="pdf-report-link"
                             href={`/employer/pdf-viewer?url=${encodeURIComponent(pdf)}&name=${encodeURIComponent(r.name || id)}`}
                             style={{ 
                               fontWeight: 700, 
@@ -1018,7 +1013,7 @@ export default function DashboardClient() {
                             onMouseEnter={function(e) { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
                             onMouseLeave={function(e) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateY(0)"; }}
                           >
-                            📑 PDF
+                            PDF
                           </a>
                         )}
                       </div>

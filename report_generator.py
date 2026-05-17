@@ -558,39 +558,43 @@ def generate_pdf_report(
       <title>EPQ Applicant Report - {candidate_id}</title>
       <style>
         * {{ box-sizing: border-box; }}
-        html {{ text-rendering: optimizeLegibility; }}
-        body {{ font-family: Arial, Helvetica, sans-serif; margin: 12px 16px; color: #1f2933; font-size: 11.5px; line-height:1.42; letter-spacing: normal; word-spacing: normal; }}
-        h1 {{ font-size: 23px; margin: 0 0 5px; color: #12131a; letter-spacing: normal; line-height:1.12; }}
-        h2 {{ font-size: 14px; margin: 15px 0 7px; color: #12131a; line-height:1.22; page-break-after: avoid; }}
-        h3 {{ font-size: 12.5px; margin: 11px 0 6px; color: #293241; line-height:1.25; }}
-        p {{ margin: 0 0 8px; }}
-        ul, ol {{ margin-top: 8px; padding-left: 20px; }}
-        li {{ margin-bottom: 5px; line-height:1.38; }}
-        table {{ border-collapse: collapse; width: 100%; margin-top:8px; page-break-inside: auto; }}
+        html {{ text-rendering: auto; }}
+        body {{ font-family: "DejaVu Sans", Arial, Helvetica, sans-serif; margin: 12px 16px; color: #1f2933; font-size: 12px; line-height:1.5; letter-spacing: 0; word-spacing: 0; text-align: left; }}
+        h1 {{ font-size: 23px; margin: 0 0 6px; color: #12131a; font-weight: 600; letter-spacing: 0; line-height:1.18; }}
+        h2 {{ font-size: 14.5px; margin: 16px 0 8px; color: #12131a; font-weight: 600; letter-spacing: 0; line-height:1.3; page-break-after: avoid; }}
+        h3 {{ font-size: 12.8px; margin: 12px 0 7px; color: #293241; font-weight: 600; line-height:1.32; }}
+        p {{ margin: 0 0 9px; max-width: 680px; }}
+        ul, ol {{ margin-top: 8px; padding-left: 21px; }}
+        li {{ margin-bottom: 6px; line-height:1.48; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top:9px; page-break-inside: auto; }}
         tr {{ page-break-inside: avoid; }}
-        th, td {{ border: 1px solid #d9dee7; padding: 7px 8px; text-align: left; vertical-align: top; font-size: 10.7px; line-height:1.34; word-spacing: normal; }}
-        th {{ background-color: #f4f6f8; font-weight:700; color: #293241; text-transform: none; }}
-        td.avg {{ font-weight:700; width:82px; text-align:center; }}
-        .band {{ margin-top: 4px; font-size: 9.5px; color: #5d6b7a; font-weight: 700; text-transform: uppercase; letter-spacing: normal; }}
-        .construct-name {{ font-size:10px; color:#4d5967; line-height:1.25; margin-top:2px; }}
-        .muted {{ color:#66717f; font-size:9.8px; margin-top:2px; }}
+        th, td {{ border: 1px solid #d9dee7; padding: 9px 10px; text-align: left; vertical-align: top; font-size: 11px; line-height:1.46; word-spacing: 0; letter-spacing: 0; overflow-wrap: normal; }}
+        th {{ background-color: #f4f6f8; font-weight:600; color: #293241; text-transform: none; }}
+        td.avg {{ font-weight:600; width:86px; text-align:center; }}
+        strong {{ font-weight: 600; }}
+        em {{ font-style: italic; }}
+        .band {{ margin-top: 4px; font-size: 9.8px; color: #5d6b7a; font-weight: 600; text-transform: none; letter-spacing: 0; }}
+        .construct-name {{ font-size:10.4px; color:#4d5967; line-height:1.34; margin-top:3px; }}
+        .muted {{ color:#66717f; font-size:10px; margin-top:3px; line-height:1.35; }}
         img {{ max-width: 84%; height: auto; display: block; margin: 5px auto 2px; }}
-        .meta {{ color:#5d6b7a; font-size:11px; margin-bottom: 10px; }}
-        .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 10px 11px; margin: 9px 0; page-break-inside: avoid; }}
-        .summary-grid {{ display: table; width: 100%; table-layout: fixed; margin-top: 8px; }}
-        .summary-cell {{ display: table-cell; padding: 8px; border-right: 1px solid #d9dee7; }}
+        .meta {{ color:#5d6b7a; font-size:11px; line-height:1.42; margin-bottom: 11px; }}
+        .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 11px 12px; margin: 10px 0; page-break-inside: avoid; }}
+        .summary-grid {{ display: table; width: 100%; table-layout: fixed; margin-top: 9px; }}
+        .summary-cell {{ display: table-cell; padding: 9px 10px; border-right: 1px solid #d9dee7; }}
         .summary-cell:last-child {{ border-right: 0; }}
-        .summary-label {{ font-size:9.8px; text-transform: uppercase; letter-spacing:0; color:#6b7684; font-weight:700; }}
-        .summary-value {{ font-size:17px; color:#12131a; font-weight:800; margin-top:3px; line-height:1.15; }}
-        .note {{ border-left: 4px solid #6f8f7a; background:#f4f8f5; padding: 8px 10px; margin: 9px 0; color:#304438; page-break-inside: avoid; }}
-        .disclaimer {{ border: 1px solid #d9dee7; background:#fbfbfc; padding: 9px 10px; margin-top: 12px; font-size: 10px; color:#4d5967; }}
+        .summary-label {{ font-size:10px; text-transform: none; letter-spacing:0; color:#6b7684; font-weight:600; }}
+        .summary-value {{ font-size:17px; color:#12131a; font-weight:600; margin-top:4px; line-height:1.24; }}
+        .note {{ border-left: 4px solid #6f8f7a; background:#f4f8f5; padding: 9px 11px; margin: 10px 0; color:#304438; page-break-inside: avoid; }}
+        .disclaimer {{ border: 1px solid #d9dee7; background:#fbfbfc; padding: 10px 11px; margin-top: 13px; font-size: 10.5px; line-height:1.44; color:#4d5967; }}
         .section-grid {{ display: table; width: 100%; table-layout: fixed; border-spacing: 10px 0; margin-top: 6px; }}
-        .section-cell {{ display: table-cell; width: 50%; vertical-align: top; border: 1px solid #d9dee7; border-radius: 8px; background: #ffffff; padding: 10px 12px; }}
-        .action-box {{ border: 1px solid #d9dee7; background: #f7f9fb; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }}
+        .section-cell {{ display: table-cell; width: 50%; vertical-align: top; border: 1px solid #d9dee7; border-radius: 8px; background: #ffffff; padding: 11px 13px; }}
+        .action-box {{ border: 1px solid #d9dee7; background: #f7f9fb; border-radius: 8px; padding: 11px 13px; margin-top: 11px; }}
         .compact-heading {{ margin-top: 0; }}
-        .reference-table th:nth-child(1), .reference-table td:nth-child(1) {{ width: 54px; text-align:center; }}
-        .reference-table th:nth-child(2), .reference-table td:nth-child(2) {{ width: 180px; }}
-        .prompt-list li {{ padding-left: 2px; }}
+        .reference-table th:nth-child(1), .reference-table td:nth-child(1) {{ width: 62px; text-align:center; }}
+        .reference-table th:nth-child(2), .reference-table td:nth-child(2) {{ width: 210px; }}
+        .scores-table th:nth-child(1), .scores-table td:nth-child(1) {{ width: 150px; }}
+        .scores-table th:nth-child(2), .scores-table td:nth-child(2) {{ width: 80px; }}
+        .prompt-list li {{ padding-left: 3px; max-width: 700px; }}
       </style>
     </head>
     <body>
@@ -637,7 +641,7 @@ def generate_pdf_report(
       </table>
 
       <h2>Construct Scores and Employer Interpretation</h2>
-      <table>
+      <table class="scores-table">
         <tr>
           <th>Construct</th>
           <th>Score</th>
@@ -713,6 +717,11 @@ def generate_pdf_report(
             "encoding": "UTF-8",
             "images": None,
             "quiet": "",
+            "dpi": "96",
+            "zoom": "1",
+            "minimum-font-size": "10",
+            "disable-smart-shrinking": "",
+            "print-media-type": "",
         }
 
         # Security: do NOT allow local file access by default.

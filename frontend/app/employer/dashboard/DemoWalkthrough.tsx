@@ -42,16 +42,16 @@ function buildSteps(): TourStep[] {
       data: { route: "/employer/dashboard" },
     },
     {
-      target: targetFor('[data-tour="setup-epq"]', '[data-tour="role-card"]', '[data-tour="create-role-footer"]', "body"),
+      target: targetFor('[data-tour="applicant-share"]', '[data-tour="setup-epq"]', '[data-tour="role-card"]', '[data-tour="create-role-footer"]', "body"),
       title: "Applicant link sharing",
-      content: "Once an assessment is configured, share the generated applicant link. Applicants complete EPQ without needing employer dashboard access.",
-      placement: "right",
+      content: "This panel shows the next action for the selected role. If an assessment exists, copy the applicant link here. If not, use the setup button to create it.",
+      placement: "bottom",
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="submissions-table"]', '[data-tour="submissions-empty"]', '[data-tour="dashboard-main"]', "body"),
       title: "Submissions and candidates",
-      content: "Completed applicants appear here for the selected role. This area is safe if data is still loading or unavailable during a demo.",
+      content: "Completed applicants appear here for the selected role. If there are no applicants yet, EPQ shows a clean empty state with the next step instead of an error.",
       placement: "top",
       data: { route: "/employer/dashboard" },
     },
@@ -59,14 +59,14 @@ function buildSteps(): TourStep[] {
       target: targetFor('[data-tour="pdf-report-link"]', '[data-tour="candidate-details-link"]', '[data-tour="submissions-table"]', '[data-tour="submissions-empty"]', '[data-tour="dashboard-main"]', "body"),
       title: "PDF report viewing",
       content: "When report generation succeeds, open the PDF from the candidate row or detail page. If no PDF is present yet, this step uses the submissions area as context.",
-      placement: "left",
+      placement: "auto",
       data: { route: "/employer/dashboard" },
     },
     {
       target: targetFor('[data-tour="modules-hero"]', "body"),
       title: "Modules hub",
       content: "The Modules page shows the broader EPQ workspace. Active modules are clickable; roadmap modules are clearly marked as Coming Soon.",
-      placement: "bottom",
+      placement: "auto",
       data: { route: "/employer/modules" },
     },
     {
@@ -87,7 +87,7 @@ function buildSteps(): TourStep[] {
       target: targetFor('[data-tour="analytics-header"]', "body"),
       title: "Analytics section",
       content: "Analytics gives a demo view of hiring funnel health and pipeline performance. Treat these charts as directional until connected to full production data.",
-      placement: "bottom",
+      placement: "auto",
       data: { route: "/employer/analytics" },
     },
     {
@@ -101,21 +101,21 @@ function buildSteps(): TourStep[] {
       target: targetFor('[data-tour="branding-header"]', "body"),
       title: "Branding section",
       content: "Company Branding lets employers prepare the workspace for a more polished applicant and employer experience.",
-      placement: "bottom",
+      placement: "auto",
       data: { route: "/employer/settings/branding" },
     },
     {
       target: targetFor('[data-tour="branding-upload"]', '[data-tour="branding-header"]', "body"),
       title: "Branding setup",
       content: "Logo upload and report branding are part of the trust layer. Some report branding may remain Coming Soon depending on your demo environment.",
-      placement: "top",
+      placement: "auto",
       data: { route: "/employer/settings/branding" },
     },
     {
       target: targetFor('[data-tour="dashboard-header"]', "body"),
       title: "Tour complete",
       content: "The main story is: create a role, configure EPQ, share the applicant link, review submissions, open reports, and show the expanding modules around that core workflow.",
-      placement: "bottom",
+      placement: "auto",
       data: { route: "/employer/dashboard" },
     },
   ];
@@ -124,12 +124,26 @@ function buildSteps(): TourStep[] {
 export default function DemoWalkthrough() {
   const router = useRouter();
   const pathname = usePathname();
-  const [open, setOpen] = React.useState(false);
+  const [tourActive, setTourActive] = React.useState(false);
+  const [run, setRun] = React.useState(false);
   const [stepIndex, setStepIndex] = React.useState(0);
   const [steps, setSteps] = React.useState<TourStep[]>([]);
+  const [tourKey, setTourKey] = React.useState(0);
+
+  function cleanupJoyridePortal() {
+    const removePortal = () => {
+      document.getElementById("react-joyride-portal")?.remove();
+      document.body.style.pointerEvents = "";
+      document.documentElement.style.pointerEvents = "";
+    };
+    window.setTimeout(removePortal, 0);
+    window.setTimeout(removePortal, 80);
+  }
 
   const startTour = React.useCallback(() => {
-    setOpen(true);
+    setTourKey((current) => current + 1);
+    setTourActive(true);
+    setRun(true);
     setStepIndex(0);
     if (pathname !== "/employer/dashboard") {
       router.push("/employer/dashboard");
@@ -154,35 +168,41 @@ export default function DemoWalkthrough() {
   }, [pathname, startTour]);
 
   React.useEffect(() => {
-    if (!open) {
+    if (!tourActive) {
       setSteps([]);
       return;
     }
 
     const timer = window.setTimeout(() => {
       setSteps(buildSteps());
+      setRun(true);
     }, 180);
 
     return () => window.clearTimeout(timer);
-  }, [open, pathname, stepIndex]);
+  }, [tourActive, pathname, stepIndex]);
 
   React.useEffect(() => {
-    if (!open || steps.length === 0) return;
+    if (!tourActive || steps.length === 0) return;
 
     const route = steps[stepIndex]?.data?.route;
     if (route && pathname !== route) {
+      setRun(false);
       setSteps([]);
+      cleanupJoyridePortal();
       router.push(route);
     }
-  }, [open, pathname, router, stepIndex, steps]);
+  }, [tourActive, pathname, router, stepIndex, steps]);
 
   function finishTour() {
     try {
       window.localStorage.setItem(STORAGE_KEY, "true");
     } catch {}
+    setRun(false);
     setStepIndex(0);
-    setOpen(false);
+    setTourActive(false);
     setSteps([]);
+    setTourKey((current) => current + 1);
+    cleanupJoyridePortal();
   }
 
   function moveTo(nextIndex: number) {
@@ -190,7 +210,9 @@ export default function DemoWalkthrough() {
     const route = steps[bounded]?.data?.route;
     setStepIndex(bounded);
     if (route && pathname !== route) {
+      setRun(false);
       setSteps([]);
+      cleanupJoyridePortal();
       router.push(route);
     }
   }
@@ -227,11 +249,20 @@ export default function DemoWalkthrough() {
     }
   }
 
-  if (!open || steps.length === 0) return null;
+  if (!tourActive || steps.length === 0) return null;
 
   return (
     <Joyride
+      key={tourKey}
       continuous
+      floatingOptions={{
+        flipOptions: {
+          padding: 16,
+        },
+        shiftOptions: {
+          padding: 16,
+        },
+      }}
       onEvent={handleJoyride}
       options={{
         arrowColor: "#12131A",
@@ -249,10 +280,10 @@ export default function DemoWalkthrough() {
         spotlightRadius: 8,
         targetWaitTimeout: 700,
         textColor: "#E8E9ED",
-        width: 420,
+        width: "min(420px, calc(100vw - 32px))",
         zIndex: 1100,
       }}
-      run={open && steps.length > 0}
+      run={run && tourActive && steps.length > 0}
       scrollToFirstStep
       stepIndex={stepIndex}
       steps={steps}
@@ -262,6 +293,8 @@ export default function DemoWalkthrough() {
           borderRadius: 8,
           boxShadow: "0 24px 80px rgba(0, 0, 0, 0.45)",
           fontSize: 14,
+          maxWidth: "calc(100vw - 32px)",
+          overflowWrap: "break-word",
         },
         tooltipTitle: {
           color: "var(--text-primary)",

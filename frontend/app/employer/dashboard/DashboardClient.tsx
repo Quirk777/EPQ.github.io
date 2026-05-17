@@ -5,6 +5,7 @@ import Link from "next/link";
 import LoadingSpinner from "../../_components/LoadingSpinner";
 import Alert from "../../_components/Alert";
 import CompanyLogo from "../../components/CompanyLogo";
+import DemoWalkthrough from "./DemoWalkthrough";
 
 type Role = {
   role_id?: string;
@@ -96,11 +97,20 @@ export default function DashboardClient() {
   const [verificationRequired, setVerificationRequired] = React.useState(false);
   const [resendMessage, setResendMessage] = React.useState<string | null>(null);
   const [resendingVerification, setResendingVerification] = React.useState(false);
+  const [demoWalkthroughOpen, setDemoWalkthroughOpen] = React.useState(false);
 
   const [rows, setRows] = React.useState<Row[]>([]);
   
   // Comparison state
   const [selectedCandidates, setSelectedCandidates] = React.useState<string[]>([]);
+
+  React.useEffect(function () {
+    try {
+      if (window.localStorage.getItem("epq_demo_walkthrough_dismissed") !== "true") {
+        setDemoWalkthroughOpen(true);
+      }
+    } catch (e) {}
+  }, []);
 
   function toggleCandidate(candidateId: string) {
     setSelectedCandidates(prev => 
@@ -341,7 +351,11 @@ export default function DashboardClient() {
       position: "relative" as const,
       overflow: "hidden" as const,
     }} className="texture-background">
-      
+      <DemoWalkthrough
+        open={demoWalkthroughOpen}
+        selectedRoleId={roleId}
+        onClose={function () { setDemoWalkthroughOpen(false); }}
+      />
 
       {/* Main Layout Container with Sidebar */}
       <div className="epq-dashboard-layout" style={{
@@ -351,7 +365,7 @@ export default function DashboardClient() {
         zIndex: 1,
       }}>
         {/* Left Sidebar - Roles */}
-        <aside className="epq-dashboard-sidebar" style={{
+        <aside className="epq-dashboard-sidebar texture-surface-1" style={{
           width: 320,
           flexShrink: 0,
           background: "var(--surface-1)",
@@ -361,7 +375,7 @@ export default function DashboardClient() {
           overflowY: "auto" as const,
           maxHeight: "100vh",
           position: "relative" as const,
-        }} className="texture-surface-1">
+        }}>
           {/* Sidebar Header */}
           <div style={{
             padding: "var(--space-6) var(--space-5)",
@@ -678,6 +692,24 @@ export default function DashboardClient() {
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" as const }}>
+                <button
+                  type="button"
+                  onClick={function () { setDemoWalkthroughOpen(true); }}
+                  style={{
+                    padding: "var(--space-2) var(--space-4)",
+                    borderRadius: 6,
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--accent-blue-dim)",
+                    color: "var(--accent-blue)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "var(--text-sm)",
+                    transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                >
+                  Start Demo Walkthrough
+                </button>
+
                 <a
                   href="/employer/profile"
                   style={{

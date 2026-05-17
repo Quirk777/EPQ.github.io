@@ -150,15 +150,110 @@ def generate_pdf_report(
 
     # ---------- canonical construct map ----------
     canonical_map = {
-        "structural clarity load": ("SCL", "Structural Clarity Load", "Preference for clear processes, rules, and predictable expectations."),
-        "cognitive compression demand": ("CCD", "Cognitive Compression Demand", "How much cognitive consolidation is required when handling dense information."),
-        "complexity integration load": ("CIL", "Complexity Integration Load", "Demand for integrating multiple complex factors into decisions."),
-        "change volatility load": ("CVL", "Change Volatility Load", "Exposure to frequent or unpredictable change in priorities or scope."),
-        "emotional regulation load": ("ERL", "Emotional Regulation Load", "Emotional control required to manage social or stressful interactions."),
-        "motivational sustainment demand": ("MSD", "Motivational Sustainment Demand", "Effort needed to stay motivated on repetitive or long-duration tasks."),
-        "interpersonal coordination intensity": ("ICI", "Interpersonal Coordination Intensity", "Amount of real-time interaction and coordination required with others."),
-        "autonomy & judgment load": ("AJL", "Autonomy & Judgment Load", "Degree of independent decision-making and judgment required."),
+        "structural clarity load": ("SCL", "Structural Clarity Load", "How strongly the applicant appears to rely on clear rules, role boundaries, decision rights, and predictable expectations."),
+        "cognitive compression demand": ("CCD", "Cognitive Compression Demand", "How the applicant appears to manage dense information, competing details, and the need to turn complexity into workable priorities."),
+        "complexity integration load": ("CIL", "Complexity Integration Load", "How comfortable the applicant appears when synthesizing multiple variables, trade-offs, and ambiguous inputs into decisions."),
+        "change volatility load": ("CVL", "Change Volatility Load", "How the applicant appears to respond when priorities, processes, timelines, or business conditions shift quickly."),
+        "emotional regulation load": ("ERL", "Emotional Regulation Load", "How the applicant appears to handle emotionally demanding interactions, pressure, conflict, or high-stakes interpersonal moments."),
+        "motivational sustainment demand": ("MSD", "Motivational Sustainment Demand", "How the applicant appears to sustain effort across repetitive, delayed-reward, or long-cycle work."),
+        "interpersonal coordination intensity": ("ICI", "Interpersonal Coordination Intensity", "How the applicant appears to experience frequent coordination, stakeholder alignment, collaboration, and real-time communication."),
+        "autonomy & judgment load": ("AJL", "Autonomy & Judgment Load", "How the applicant appears to handle independent judgment, self-direction, ownership, and decisions without constant managerial guidance."),
     }
+    canonical_by_abbr = {abbr: (abbr, full, meaning) for abbr, full, meaning in canonical_map.values()}
+
+    construct_profiles = {
+        "SCL": {
+            "plain": "structure and role clarity",
+            "employer_value": "Use this signal to calibrate how explicit expectations, success criteria, and operating rules should be during ramp-up.",
+            "higher": ("May be comfortable operating from defined expectations and translating structure into dependable execution.", "Too much ambiguity or shifting accountability may reduce confidence if the role is advertised as more structured than it is.", "Share decision rights, examples of successful work, and a short written definition of what good performance looks like."),
+            "balanced": ("Likely to work with a reasonable mix of guidance and independence when expectations are introduced early.", "May need clarification when ownership boundaries or approval paths are unclear.", "Confirm priorities in writing during the first month, then reduce scaffolding as confidence grows."),
+            "lower": ("May tolerate looser environments and learn through exploration rather than heavy procedural detail.", "Highly regulated or rule-bound work may feel constraining unless the purpose behind the process is clear.", "Explain which procedures are mandatory, where discretion is welcome, and how exceptions should be escalated."),
+        },
+        "CCD": {
+            "plain": "dense information and mental load",
+            "employer_value": "Use this to discuss how the applicant processes information, prioritizes, and avoids overload in detail-heavy work.",
+            "higher": ("May be comfortable compressing complex inputs into priorities, summaries, or next steps.", "Sustained information density can still create fatigue if everything is urgent or poorly organized.", "Provide context, decision deadlines, and templates for recurring analysis so high cognitive effort is directed well."),
+            "balanced": ("Likely to manage ordinary information load when priorities and source materials are organized.", "Rapid context switching or unclear data ownership may slow momentum.", "Group related information, define the immediate decision, and separate must-know details from background material."),
+            "lower": ("May do best when information is sequenced, concrete, and connected to the task at hand.", "Dense documentation, simultaneous requests, or unclear prioritization may create friction.", "Use staged onboarding, examples, checklists, and brief summaries before asking for independent synthesis."),
+        },
+        "CIL": {
+            "plain": "multi-factor problem solving",
+            "employer_value": "Use this to understand how the applicant approaches ambiguity, trade-offs, and decisions that do not have one obvious answer.",
+            "higher": ("May be energized by problems that require judgment across competing variables.", "Can over-invest in analysis if decision speed and constraints are not explicit.", "Agree on decision thresholds, time boxes, and what level of evidence is enough to move forward."),
+            "balanced": ("Likely to integrate complexity when the problem is framed clearly and stakeholders agree on the goal.", "May need help when variables conflict or success criteria are moving.", "Use structured decision briefs and review trade-offs together on early assignments."),
+            "lower": ("May contribute strongest when complex problems are broken into concrete choices or smaller workstreams.", "Highly ambiguous work may feel less effective without a clear frame.", "Break complex work into staged questions, provide examples, and make the decision model visible."),
+        },
+        "CVL": {
+            "plain": "change and volatility",
+            "employer_value": "Use this to explore how the applicant responds to shifting priorities, imperfect information, and changing operating conditions.",
+            "higher": ("May adapt quickly when plans change and may tolerate fluid work better than highly static routines.", "Frequent change still requires prioritization; otherwise adaptability can become reactive work.", "Name what changed, what stayed stable, and which priorities should be protected."),
+            "balanced": ("Likely to handle normal business change when updates are explained and trade-offs are visible.", "Abrupt shifts without context may create avoidable uncertainty.", "Use short change briefings: what changed, why it matters, and what decision is needed now."),
+            "lower": ("May perform best where change is paced, explained, and connected to a stable operating rhythm.", "Constant pivots may reduce focus or confidence if the work lacks anchors.", "Provide advance notice where possible, preserve core routines, and clarify what not to worry about yet."),
+        },
+        "ERL": {
+            "plain": "emotional pressure and regulation",
+            "employer_value": "Use this to discuss the emotional demands of the role, including conflict, customer pressure, feedback, or high-stakes conversations.",
+            "higher": ("May remain effective during pressure, interpersonal tension, or emotionally charged interactions.", "High emotional load should not be normalized as unlimited capacity; recovery and escalation paths still matter.", "Define escalation channels, debrief difficult moments, and avoid using resilience as a substitute for support."),
+            "balanced": ("Likely to handle ordinary interpersonal pressure when expectations and support norms are clear.", "Repeated emotional strain may accumulate if it is not acknowledged.", "Set norms for feedback, conflict resolution, and when to involve a manager."),
+            "lower": ("May do best when emotionally intense work is bounded, predictable, and supported.", "Roles with frequent conflict or distressed stakeholders may require more deliberate support.", "Use scripts, shadowing, debriefs, and clear escalation rules for high-pressure interactions."),
+        },
+        "MSD": {
+            "plain": "sustained motivation over time",
+            "employer_value": "Use this to explore what keeps the applicant engaged when work is repetitive, delayed in reward, or requires persistence.",
+            "higher": ("May sustain effort through longer cycles, repeated tasks, or delayed outcomes.", "Persistence can still decline when progress is invisible or effort feels disconnected from impact.", "Make progress visible, connect recurring tasks to business outcomes, and rotate stretch work where appropriate."),
+            "balanced": ("Likely to sustain motivation when milestones, feedback, and workload variety are balanced.", "Long stretches without feedback or visible progress may reduce energy.", "Use milestone check-ins, visible wins, and a balanced mix of routine and learning tasks."),
+            "lower": ("May engage best when work has shorter feedback loops, variety, and visible purpose.", "Highly repetitive or slow-cycle work may require more intentional pacing.", "Create near-term milestones, explain why routine tasks matter, and add variety after baseline competence is established."),
+        },
+        "ICI": {
+            "plain": "collaboration and coordination intensity",
+            "employer_value": "Use this to calibrate meeting load, stakeholder interaction, handoffs, and real-time collaboration expectations.",
+            "higher": ("May be comfortable coordinating across people, dependencies, and live discussion.", "Heavy collaboration can become fragmented without decision discipline and ownership clarity.", "Clarify meeting purpose, ownership after discussion, and which channels are for urgent versus async work."),
+            "balanced": ("Likely to collaborate well when interaction has a clear purpose and does not crowd out focused work.", "Too many meetings or unclear handoffs may create friction.", "Set communication norms, define handoff expectations, and protect focus time during ramp-up."),
+            "lower": ("May be strongest when collaboration is purposeful, prepared, and balanced with independent focus.", "Highly interruptive or meeting-heavy roles may reduce effectiveness.", "Use agendas, written context, async updates, and clear expectations for when live coordination is required."),
+        },
+        "AJL": {
+            "plain": "autonomy and independent judgment",
+            "employer_value": "Use this to understand how much direction, ownership, and decision latitude the applicant may need during ramp-up.",
+            "higher": ("May be comfortable making decisions, owning outcomes, and moving forward without constant approval.", "Autonomy works best when boundaries and escalation triggers are clear.", "Define decision rights, risk limits, and when to seek alignment before acting."),
+            "balanced": ("Likely to take ownership when goals are clear and support is available for unfamiliar decisions.", "May pause when authority is unclear or when decisions carry visible risk.", "Use progressive autonomy: start with shared decisions, then expand ownership as evidence builds."),
+            "lower": ("May do best with closer guidance at first, especially when decisions are new, ambiguous, or high impact.", "Too much early independence may create uncertainty or slow execution.", "Provide examples, approval paths, and manager availability before widening decision latitude."),
+        },
+    }
+
+    def construct_meta(key: str) -> tuple[str, str, str]:
+        direct = str(key).strip().upper()
+        if direct in canonical_by_abbr:
+            return canonical_by_abbr[direct]
+        full_name = humanize(key)
+        lookup = full_name.lower()
+        if lookup in canonical_map:
+            return canonical_map[lookup]
+        abbr = get_abbrev(key)
+        return (abbr, full_name, f"{full_name} is a job-relevant work-environment demand used to discuss fit and onboarding.")
+
+    def construct_profile(abbr: str, full_name: str) -> dict:
+        return construct_profiles.get(
+            abbr,
+            {
+                "plain": full_name.lower(),
+                "employer_value": "Use this signal to guide role-fit conversation, expectations, and onboarding support.",
+                "higher": (
+                    f"May be comfortable with higher demand related to {full_name.lower()}.",
+                    "Confirm examples rather than assuming the score generalizes to every context.",
+                    "Clarify expectations, decision rules, and early success measures.",
+                ),
+                "balanced": (
+                    f"Likely to adapt to moderate {full_name.lower()} when context is clear.",
+                    "May need support if the demand increases quickly or becomes poorly defined.",
+                    "Use normal manager context, early feedback, and practical examples.",
+                ),
+                "lower": (
+                    f"May work best when {full_name.lower()} is introduced with more structure.",
+                    "High immediate demand may create friction if support is limited.",
+                    "Use staged onboarding, examples, and focused check-ins.",
+                ),
+            },
+        )
 
     # ---------- normalize scoring output (supports old + new scorer shapes) ----------
     constructs = {}
@@ -203,7 +298,7 @@ def generate_pdf_report(
         except Exception:
             return 0.0
 
-    labels = [humanize(k) for k in ordered_keys]
+    labels = [construct_meta(k)[0] for k in ordered_keys]
     sizes = [_get_avg(k) for k in ordered_keys]
 
     no_scores = (not sizes) or (sum(sizes) == 0)
@@ -248,9 +343,11 @@ def generate_pdf_report(
 
     # ---------- generate table rows ----------
     table_rows_html = ""
+    construct_reference_html = ""
     key_strengths = []
     development_opportunities = []
     interview_prompts = []
+    scored_items = []
 
     def band_label(avg: float) -> tuple[str, str]:
         if avg >= 2.7:
@@ -274,76 +371,119 @@ def generate_pdf_report(
         interview_prompts = ["Walk me through how you approach a new questionnaire or unfamiliar process. What helps you be accurate?"]
     else:
         for k in ordered_keys:
-            full_name = humanize(k)
-            lookup = full_name.lower()
-
-            if lookup in canonical_map:
-                abbr, canonical_full, _short_meaning = canonical_map[lookup]
-            else:
-                abbr = get_abbrev(k)
-                canonical_full = full_name
+            abbr, canonical_full, short_meaning = construct_meta(k)
+            profile = construct_profile(abbr, canonical_full)
 
             avg = _get_avg(k)
 
             band, band_meaning = band_label(avg)
-
-            env_key = str(employer_environment).capitalize()
-            feedback_text = ""
-            if isinstance(EPQ_FEEDBACK, dict):
-                feedback_text = (
-                    EPQ_FEEDBACK.get(k, {}).get(env_key, {}).get(band, "")
-                    or EPQ_FEEDBACK.get(k, {}).get("Standard", {}).get(band, "")
-                    or ""
-                )
-
-            if not feedback_text:
-                if band == "Higher":
-                    feedback_text = abbr + " suggests comfort with higher demand in this work-environment area."
-                elif band == "Balanced":
-                    feedback_text = abbr + " suggests a flexible, moderate preference that can adapt to reasonable variation."
-                else:
-                    feedback_text = abbr + " suggests the candidate may work best with clearer structure or lighter demand in this area."
+            strength, consideration, support = profile[band.lower()]
+            feedback_text = f"{band_meaning} In employer terms, this is a signal about {profile['plain']}, not a fixed trait."
 
             if band == "Higher":
-                positive = "Useful signal for roles where " + canonical_full.lower() + " is a regular part of the work."
-                setback = "Avoid assuming this is universally better; very high demand can still create fatigue without prioritization."
-                mitigation = "Use this as a role-design strength and confirm examples during interview."
-                key_strengths.append(abbr + ": comfortable with higher " + canonical_full.lower() + ".")
+                key_strengths.append(f"Explore how the applicant uses {profile['plain']} productively when the work is demanding.")
             elif band == "Balanced":
-                positive = "Likely to adapt when expectations are clear and workload is managed."
-                setback = "May benefit from brief check-ins if this demand spikes quickly."
-                mitigation = "Provide concise expectations and review cadence during onboarding."
-                development_opportunities.append(abbr + ": use concise expectations and normal manager check-ins.")
+                development_opportunities.append(f"Confirm what level of guidance helps the applicant stay effective with {profile['plain']}.")
             else:
-                positive = "Can perform well when role expectations and supports are explicit."
-                setback = "Possible friction if high " + canonical_full.lower() + " is required immediately without support."
-                mitigation = "Use checklists, paired mentoring, examples of good work, and short focused training."
-                development_opportunities.append(abbr + ": provide structured onboarding, examples, and checklists.")
+                development_opportunities.append(f"Plan early support around {profile['plain']} if the role requires it from day one.")
 
-            interview_prompts.append("Describe a time when " + canonical_full.lower() + " mattered and how you handled it.")
+            scored_items.append({
+                "key": k,
+                "abbr": abbr,
+                "full": canonical_full,
+                "meaning": short_meaning,
+                "plain": profile["plain"],
+                "avg": avg,
+                "band": band,
+            })
 
             table_rows_html += (
                 "<tr>"
-                "<td><strong style='font-size:14px'>" + abbr + "</strong><div style='font-size:11px;color:#555'>" + canonical_full + "</div></td>"
+                "<td><strong style='font-size:13px'>" + html_escape(abbr) + "</strong><div class='construct-name'>" + html_escape(canonical_full) + "</div></td>"
                 "<td class='avg'>" + format(avg, ".2f") + "<div class='band'>" + html_escape(band) + "</div></td>"
                 "<td><strong>" + html_escape(band_meaning) + "</strong><br>" + html_escape(_fix_mojibake(feedback_text)) + "</td>"
-                "<td>" + html_escape(_fix_mojibake(positive)) + "</td>"
-                "<td>" + html_escape(_fix_mojibake(setback)) + "<br><em>Suggested support:</em> " + html_escape(_fix_mojibake(mitigation)) + "</td>"
+                "<td>" + html_escape(_fix_mojibake(strength)) + "</td>"
+                "<td>" + html_escape(_fix_mojibake(consideration)) + "<br><em>Onboarding move:</em> " + html_escape(_fix_mojibake(support)) + "</td>"
                 "</tr>\n"
             )
 
         key_strengths = sorted(set(key_strengths)) or ["Adaptive, collaborative, dependable."]
         development_opportunities = sorted(set(development_opportunities)) or ["Provide clear initial expectations and mentoring."]
 
+        for item in sorted(scored_items, key=lambda x: x["abbr"]):
+            construct_reference_html += (
+                "<tr>"
+                "<td><strong>" + html_escape(item["abbr"]) + "</strong></td>"
+                "<td><strong>" + html_escape(item["full"]) + "</strong><div class='muted'>Score: " + format(item["avg"], ".2f") + " · " + html_escape(item["band"]) + "</div></td>"
+                "<td>" + html_escape(_fix_mojibake(item["meaning"])) + "</td>"
+                "<td>" + html_escape(_fix_mojibake(construct_profile(item["abbr"], item["full"])["employer_value"])) + "</td>"
+                "</tr>\n"
+            )
+
+    prompt_bank = {
+        "SCL": {
+            "Higher": "Tell me about a time clear expectations or operating rules helped you do your best work. What made the structure useful rather than restrictive?",
+            "Balanced": "When you start a new role or project, what information helps you understand what good performance looks like?",
+            "Lower": "Tell me about a time you had to make progress without much structure. How did you decide what mattered first?",
+        },
+        "CCD": {
+            "Higher": "Tell me about a time you had to absorb a lot of information quickly and turn it into a practical next step.",
+            "Balanced": "How do you organize information when several people are giving you input at the same time?",
+            "Lower": "When a project has a lot of details, what helps you avoid feeling overloaded and stay accurate?",
+        },
+        "CIL": {
+            "Higher": "Tell me about a decision where you had to balance several competing factors. How did you decide what trade-off was acceptable?",
+            "Balanced": "When a problem has several possible answers, how do you usually narrow the options?",
+            "Lower": "Tell me about a time a complex task became easier because someone helped frame the problem clearly.",
+        },
+        "CVL": {
+            "Higher": "Tell me about a time priorities changed suddenly. How did you reset your plan and keep momentum?",
+            "Balanced": "How do you prefer managers communicate changes in direction so you can adjust effectively?",
+            "Lower": "Tell me about a time change was difficult at work. What helped you regain focus and confidence?",
+        },
+        "ERL": {
+            "Higher": "Tell me about a time you stayed effective during a tense conversation or high-pressure situation.",
+            "Balanced": "What helps you receive difficult feedback or handle conflict constructively?",
+            "Lower": "When work becomes emotionally intense, what kind of support or preparation helps you perform at your best?",
+        },
+        "MSD": {
+            "Higher": "Tell me about work that required persistence over a long period. How did you keep yourself engaged?",
+            "Balanced": "What kinds of milestones or feedback help you stay motivated when results take time?",
+            "Lower": "When work becomes repetitive, what helps you reconnect it to purpose or make steady progress?",
+        },
+        "ICI": {
+            "Higher": "Tell me about a time you coordinated across several people or teams. How did you keep communication clear?",
+            "Balanced": "How do you balance collaboration with focused individual work?",
+            "Lower": "What helps you contribute well in a collaborative setting without losing the focus time you need?",
+        },
+        "AJL": {
+            "Higher": "Tell me about a time you had to make an independent decision without waiting for detailed direction.",
+            "Balanced": "When taking ownership of a new responsibility, what guidance helps you move confidently?",
+            "Lower": "Tell me about a time close coaching or a clear decision path helped you succeed in unfamiliar work.",
+        },
+    }
+
+    if not no_scores:
+        high_items = sorted(scored_items, key=lambda x: x["avg"], reverse=True)[:3]
+        low_items = sorted(scored_items, key=lambda x: x["avg"])[:3]
+        selected_items = []
+        seen = set()
+        for item in high_items + low_items:
+            if item["abbr"] not in seen:
+                selected_items.append(item)
+                seen.add(item["abbr"])
+        for item in selected_items:
+            prompt = prompt_bank.get(item["abbr"], {}).get(item["band"])
+            if prompt:
+                interview_prompts.append(prompt)
+
     generic_prompts = [
-        "Describe a time you adapted when project priorities shifted unexpectedly. What actions did you take?",
-        "How do you prefer to receive feedback during a fast-moving project?",
-        "Tell me about a process you improved. What was the result?",
-        "How do you prioritize tasks when everything has a tight deadline?",
-        "When you receive an ambiguous assignment, what are your first three steps?",
-        "Which aspects of onboarding help you ramp up fastest?",
+        "What conditions help you ramp up quickly in a new team, and what tends to slow that process down?",
+        "Describe the kind of manager communication that helps you do your strongest work.",
+        "Tell me about a recent role or project where the working environment brought out your best performance.",
+        "If you joined this team, what would you want us to understand about how you learn, collaborate, and make decisions?",
     ]
-    combined_prompts = (interview_prompts[:4] + generic_prompts)[:8]
+    combined_prompts = (interview_prompts + generic_prompts)[:8]
 
     plan_html = (
         "<strong>0-30 days:</strong> Confirm role expectations, pair with a mentor, define one measurable early deliverable, and schedule short checkpoints.<br>"
@@ -365,20 +505,12 @@ def generate_pdf_report(
         "Watch for workload friction, unclear expectations, or avoidable stress in the first 30 days."
     )
 
-    glossary_html = ""
-    if not no_scores:
-        for k in sorted(constructs.keys()):
-            full_name = humanize(k)
-            lookup = full_name.lower()
-            if lookup in canonical_map:
-                abbr, canonical_full, short_meaning = canonical_map[lookup]
-            else:
-                abbr = get_abbrev(k)
-                canonical_full = full_name
-                short_meaning = canonical_full + ": a workplace demand related to environmental fit."
-            glossary_html += "<tr><td><strong>" + abbr + "</strong></td><td>" + canonical_full + "</td><td>" + short_meaning + "</td></tr>\n"
-    else:
-        glossary_html = "<tr><td><strong>N/A</strong></td><td>No scored constructs</td><td>Scored construct aggregates were not available for this run.</td></tr>\n"
+    if no_scores:
+        construct_reference_html = (
+            "<tr><td><strong>N/A</strong></td><td>No scored constructs</td>"
+            "<td>Scored construct aggregates were not available for this run.</td>"
+            "<td>Review scoring inputs before using this report for employer interpretation.</td></tr>\n"
+        )
 
     bands_table_html = (
         "<table style='margin-top:8px;'>"
@@ -426,32 +558,39 @@ def generate_pdf_report(
       <title>EPQ Applicant Report - {candidate_id}</title>
       <style>
         * {{ box-sizing: border-box; }}
-        body {{ font-family: Arial, sans-serif; margin: 12px 16px; color: #1f2933; font-size: 12px; line-height:1.36; }}
-        h1 {{ font-size: 24px; margin: 0 0 4px; color: #12131a; letter-spacing: -0.2px; }}
-        h2 {{ font-size: 15px; margin: 16px 0 7px; color: #12131a; }}
-        h3 {{ font-size: 13px; margin: 12px 0 6px; color: #293241; }}
+        html {{ text-rendering: optimizeLegibility; }}
+        body {{ font-family: Arial, Helvetica, sans-serif; margin: 12px 16px; color: #1f2933; font-size: 11.5px; line-height:1.42; letter-spacing: normal; word-spacing: normal; }}
+        h1 {{ font-size: 23px; margin: 0 0 5px; color: #12131a; letter-spacing: normal; line-height:1.12; }}
+        h2 {{ font-size: 14px; margin: 15px 0 7px; color: #12131a; line-height:1.22; page-break-after: avoid; }}
+        h3 {{ font-size: 12.5px; margin: 11px 0 6px; color: #293241; line-height:1.25; }}
         p {{ margin: 0 0 8px; }}
         ul, ol {{ margin-top: 8px; padding-left: 20px; }}
-        li {{ margin-bottom: 4px; }}
+        li {{ margin-bottom: 5px; line-height:1.38; }}
         table {{ border-collapse: collapse; width: 100%; margin-top:8px; page-break-inside: auto; }}
-        th, td {{ border: 1px solid #d9dee7; padding: 7px 8px; text-align: left; vertical-align: top; font-size: 11px; }}
-        th {{ background-color: #f4f6f8; font-weight:700; color: #293241; }}
+        tr {{ page-break-inside: avoid; }}
+        th, td {{ border: 1px solid #d9dee7; padding: 7px 8px; text-align: left; vertical-align: top; font-size: 10.7px; line-height:1.34; word-spacing: normal; }}
+        th {{ background-color: #f4f6f8; font-weight:700; color: #293241; text-transform: none; }}
         td.avg {{ font-weight:700; width:82px; text-align:center; }}
-        .band {{ margin-top: 4px; font-size: 10px; color: #5d6b7a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }}
-        img {{ max-width: 88%; height: auto; display: block; margin: 6px auto 4px; }}
+        .band {{ margin-top: 4px; font-size: 9.5px; color: #5d6b7a; font-weight: 700; text-transform: uppercase; letter-spacing: normal; }}
+        .construct-name {{ font-size:10px; color:#4d5967; line-height:1.25; margin-top:2px; }}
+        .muted {{ color:#66717f; font-size:9.8px; margin-top:2px; }}
+        img {{ max-width: 84%; height: auto; display: block; margin: 5px auto 2px; }}
         .meta {{ color:#5d6b7a; font-size:11px; margin-bottom: 10px; }}
-        .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 11px; margin: 10px 0; }}
+        .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 10px 11px; margin: 9px 0; page-break-inside: avoid; }}
         .summary-grid {{ display: table; width: 100%; table-layout: fixed; margin-top: 8px; }}
         .summary-cell {{ display: table-cell; padding: 8px; border-right: 1px solid #d9dee7; }}
         .summary-cell:last-child {{ border-right: 0; }}
-        .summary-label {{ font-size:10px; text-transform: uppercase; letter-spacing:0.08em; color:#6b7684; font-weight:700; }}
-        .summary-value {{ font-size:18px; color:#12131a; font-weight:800; margin-top:3px; }}
-        .note {{ border-left: 4px solid #6f8f7a; background:#f4f8f5; padding: 8px 10px; margin: 10px 0; color:#304438; }}
+        .summary-label {{ font-size:9.8px; text-transform: uppercase; letter-spacing:0; color:#6b7684; font-weight:700; }}
+        .summary-value {{ font-size:17px; color:#12131a; font-weight:800; margin-top:3px; line-height:1.15; }}
+        .note {{ border-left: 4px solid #6f8f7a; background:#f4f8f5; padding: 8px 10px; margin: 9px 0; color:#304438; page-break-inside: avoid; }}
         .disclaimer {{ border: 1px solid #d9dee7; background:#fbfbfc; padding: 9px 10px; margin-top: 12px; font-size: 10px; color:#4d5967; }}
         .section-grid {{ display: table; width: 100%; table-layout: fixed; border-spacing: 10px 0; margin-top: 6px; }}
         .section-cell {{ display: table-cell; width: 50%; vertical-align: top; border: 1px solid #d9dee7; border-radius: 8px; background: #ffffff; padding: 10px 12px; }}
         .action-box {{ border: 1px solid #d9dee7; background: #f7f9fb; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }}
         .compact-heading {{ margin-top: 0; }}
+        .reference-table th:nth-child(1), .reference-table td:nth-child(1) {{ width: 54px; text-align:center; }}
+        .reference-table th:nth-child(2), .reference-table td:nth-child(2) {{ width: 180px; }}
+        .prompt-list li {{ padding-left: 2px; }}
       </style>
     </head>
     <body>
@@ -486,6 +625,16 @@ def generate_pdf_report(
       </div>
 
       {no_scores_banner}
+
+      <h2>Construct Reference</h2>
+      <p>
+        These constructs describe work-environment demands. They are designed to make the applicant conversation more precise:
+        what kind of work context helps this person perform, where might friction appear, and what support would make ramp-up fairer.
+      </p>
+      <table class="reference-table">
+        <tr><th>Code</th><th>Full Construct</th><th>Professional Definition</th><th>Why It Matters</th></tr>
+        {construct_reference_html}
+      </table>
 
       <h2>Construct Scores and Employer Interpretation</h2>
       <table>
@@ -522,7 +671,7 @@ def generate_pdf_report(
       </p>
 
       <h2>Actionable Interview Prompts</h2>
-      <ol>{"".join(f"<li>{html_escape(_fix_mojibake(p))}</li>" for p in combined_prompts)}</ol>
+      <ol class="prompt-list">{"".join(f"<li>{html_escape(_fix_mojibake(p))}</li>" for p in combined_prompts)}</ol>
 
       <div class="action-box">
         <h2 class="compact-heading">30-60-90 Day Onboarding Plan</h2>
@@ -539,12 +688,6 @@ def generate_pdf_report(
       <p>Use bands as conversation prompts and onboarding inputs. Validate important signals with examples from the candidate's experience.</p>
 
       {bands_table_html}
-
-      <h2>Construct Glossary</h2>
-      <table>
-        <tr><th>ABBR</th><th>Full Name</th><th>Short Meaning</th></tr>
-        {glossary_html}
-      </table>
 
       <div class="disclaimer">
         <strong>Important:</strong> EPQ is an employment decision-support tool focused on work-environment preferences and demands.

@@ -215,7 +215,7 @@ def generate_pdf_report(
         sizes = [1.0]
 
     # ---------- horizontal bar chart ----------
-    fig, ax = plt.subplots(figsize=(9, 5.2))
+    fig, ax = plt.subplots(figsize=(8.6, 4.2))
 
     bar_colors = ["#4f6f93", "#6f8f7a", "#8e7d9f", "#9f8f68", "#7f8fa6", "#8a6f76", "#5f7f83", "#8f785f"]
 
@@ -426,7 +426,7 @@ def generate_pdf_report(
       <title>EPQ Applicant Report - {candidate_id}</title>
       <style>
         * {{ box-sizing: border-box; }}
-        body {{ font-family: Arial, sans-serif; margin: 18px 22px; color: #1f2933; font-size: 12px; line-height:1.38; }}
+        body {{ font-family: Arial, sans-serif; margin: 12px 16px; color: #1f2933; font-size: 12px; line-height:1.36; }}
         h1 {{ font-size: 24px; margin: 0 0 4px; color: #12131a; letter-spacing: -0.2px; }}
         h2 {{ font-size: 15px; margin: 16px 0 7px; color: #12131a; }}
         h3 {{ font-size: 13px; margin: 12px 0 6px; color: #293241; }}
@@ -438,7 +438,7 @@ def generate_pdf_report(
         th {{ background-color: #f4f6f8; font-weight:700; color: #293241; }}
         td.avg {{ font-weight:700; width:82px; text-align:center; }}
         .band {{ margin-top: 4px; font-size: 10px; color: #5d6b7a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }}
-        img {{ max-width: 92%; height: auto; display: block; margin: 8px auto; }}
+        img {{ max-width: 88%; height: auto; display: block; margin: 6px auto 4px; }}
         .meta {{ color:#5d6b7a; font-size:11px; margin-bottom: 10px; }}
         .summary {{ border: 1px solid #d9dee7; background:#f7f9fb; border-radius: 8px; padding: 11px; margin: 10px 0; }}
         .summary-grid {{ display: table; width: 100%; table-layout: fixed; margin-top: 8px; }}
@@ -502,8 +502,6 @@ def generate_pdf_report(
       <h2>Visual Overview</h2>
       <img src="data:image/png;base64,{img_base64}" alt="Construct Averages Bar Chart" />
 
-      <div style="page-break-after:always;"></div>
-
       <div class="section-grid">
         <div class="section-cell">
           <h2 class="compact-heading">Likely Strengths to Explore</h2>
@@ -564,10 +562,10 @@ def generate_pdf_report(
     try:
         config = pdfkit.configuration(wkhtmltopdf=wk_path)
         options = {
-            "margin-top": "15mm",
-            "margin-bottom": "15mm",
-            "margin-left": "15mm",
-            "margin-right": "15mm",
+            "margin-top": "11mm",
+            "margin-bottom": "11mm",
+            "margin-left": "12mm",
+            "margin-right": "12mm",
             "page-size": "A4",
             "encoding": "UTF-8",
             "images": None,

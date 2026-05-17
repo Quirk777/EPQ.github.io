@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ElementType } from "react";
 import Link from "next/link";
 import CompanyLogo from '../../components/CompanyLogo';
 import { apiClient } from '../../../lib/api-client';
@@ -53,60 +54,60 @@ const MODULES: Module[] = [
     name: "AI Interview Scheduling",
     icon: "AI",
     description: "Environment-aware automated scheduling",
-    href: "/employer/calendar",
-    badge: "Active",
-    badgeColor: "var(--color-success)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   },
   {
     id: "teamfit",
     name: "Team Fit Prediction",
     icon: "TF",
     description: "Interaction stress analysis & team compatibility",
-    href: "/employer/team-fit",
-    badge: "Active",
-    badgeColor: "var(--color-success)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   },
   {
     id: "builder",
     name: "Assessment Builder",
     icon: "AB",
     description: "Custom psychometric assessments with bias warnings",
-    href: "/employer/assessment-builder",
-    badge: "Active",
-    badgeColor: "var(--color-success)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   },
   {
     id: "references",
     name: "Reference Checks",
     icon: "RC",
     description: "Automated reference verification workflows",
-    href: "/employer/references",
-    badge: "Beta",
-    badgeColor: "var(--accent-blue)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   },
   {
     id: "compliance",
     name: "Compliance & Audit",
     icon: "CO",
     description: "Bias-aware audit trails and reporting",
-    href: "/employer/compliance",
-    badge: "Beta",
-    badgeColor: "var(--accent-blue)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   },
   {
     id: "attrition",
     name: "Attrition Risk",
     icon: "AR",
     description: "Environment mismatch signals & preventative care",
-    href: "/employer/attrition",
-    badge: "Beta",
-    badgeColor: "var(--accent-blue)",
-    available: true
+    href: "#",
+    badge: "Coming Soon",
+    badgeColor: "var(--accent-lavender)",
+    available: false
   }
 ];
 
@@ -173,12 +174,14 @@ const UPCOMING_MODULES: Module[] = [
   }
 ];
 
+const activeModuleCount = MODULES.filter((module) => module.available).length;
+const comingSoonModuleCount = MODULES.filter((module) => !module.available).length + UPCOMING_MODULES.length;
+
 export default function ModulesClient() {
   const [companyName, setCompanyName] = useState<string>("Your Company");
   const [activeTab, setActiveTab] = useState<"all" | "available" | "coming" | "favorites">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [statsAnimated, setStatsAnimated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteModules, setFavoriteModules] = useState<Set<string>>(() => {
@@ -199,8 +202,8 @@ export default function ModulesClient() {
             return new Set(parsed);
           }
         }
-      } catch (e) {
-        console.warn('Failed to parse stored favorites on init:', e);
+      } catch {
+          // Ignore malformed local demo preferences.
       }
     }
     return new Set();
@@ -218,11 +221,9 @@ export default function ModulesClient() {
         if (response.success && response.data) {
           setCompanyName(response.data?.company_name || response.data?.companyName || "Your Company");
         } else {
-          console.warn('Failed to fetch company info:', response.error?.message);
           // Don't set error for company info fetch failure - use fallback
         }
-      } catch (err) {
-        console.warn('Error fetching company info:', err);
+      } catch {
         // Don't set error for company info fetch failure - use fallback
       } finally {
         setLoading(false);
@@ -242,10 +243,11 @@ export default function ModulesClient() {
             setFavoriteModules(new Set(parsed));
           }
         }
-      } catch (e) {
-        console.warn('Failed to parse stored favorites in useEffect:', e);
+      } catch {
+        // Ignore malformed local demo preferences.
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save favorites to localStorage whenever they change
@@ -257,8 +259,8 @@ export default function ModulesClient() {
         
         // Also save to sessionStorage as a backup
         sessionStorage.setItem('module-favorites-backup', JSON.stringify(favoritesArray));
-      } catch (e) {
-        console.error('Failed to save favorites:', e);
+      } catch {
+        // Ignore storage failures; favorites are cosmetic for the demo.
       }
     }
   }, [favoriteModules]);
@@ -276,7 +278,7 @@ export default function ModulesClient() {
         } else {
           setError(response.error?.message || 'Failed to load company information');
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load company information');
       } finally {
         setLoading(false);
@@ -298,8 +300,8 @@ export default function ModulesClient() {
         const favoritesArray = Array.from(newSet);
         localStorage.setItem('module-favorites', JSON.stringify(favoritesArray));
         sessionStorage.setItem('module-favorites-backup', JSON.stringify(favoritesArray));
-      } catch (e) {
-        console.error('Failed to save favorites immediately:', e);
+      } catch {
+        // Ignore storage failures; favorites are cosmetic for the demo.
       }
       
       return newSet;
@@ -383,8 +385,8 @@ export default function ModulesClient() {
               
               {/* Animated Stats */}
               <div style={s.heroStats}>
-                <AnimatedStat targetValue={9} label="Active Modules" suffix="" />
-                <AnimatedStat targetValue={6} label="Coming Soon" suffix="" />
+                <AnimatedStat targetValue={activeModuleCount} label="Active Modules" suffix="" />
+                <AnimatedStat targetValue={comingSoonModuleCount} label="Coming Soon" suffix="" />
                 <AnimatedStat targetValue={96} label="Time Saved" suffix="%" />
               </div>
             </div>
@@ -471,7 +473,7 @@ export default function ModulesClient() {
                 ...(activeTab === "favorites" ? s.tabActive : {})
               }}
             >
-              ❤️ Favorites ({favoriteModules.size})
+              Favorites ({favoriteModules.size})
               {activeTab === "favorites" && <div style={s.tabIndicator} />}
             </button>
           </div>
@@ -490,7 +492,7 @@ export default function ModulesClient() {
             </h2>
             <p style={s.sectionDesc}>
               {filteredModules.length} {filteredModules.length === 1 ? "module" : "modules"} 
-              {activeTab === "favorites" ? "in your favorites" : "available"}
+              {activeTab === "favorites" ? "in your favorites" : activeTab === "coming" ? "marked coming soon" : activeTab === "available" ? "available" : "shown"}
             </p>
           </div>
 
@@ -531,7 +533,7 @@ export default function ModulesClient() {
                 <EmptyState
                   title="No modules found"
                   message="Try adjusting your search or filters to find the modules you're looking for."
-                  icon="🔍"
+                  icon="Search"
                   actionLabel={searchQuery || selectedCategory !== "All" ? "Clear Filters" : undefined}
                   onAction={searchQuery || selectedCategory !== "All" ? () => {
                     setSearchQuery("");
@@ -570,11 +572,9 @@ export default function ModulesClient() {
         <div style={s.container}>
           <div style={s.footerGlass}>
             <p style={s.footerText}>
-              <strong>Need help?</strong> <Link href="#" style={s.footerLink}>Documentation</Link> ·{" "}
-              <Link href="#" style={s.footerLink}>Support</Link> ·{" "}
-              <Link href="#" style={s.footerLink}>API Reference</Link>
+              <strong>Need help?</strong> Documentation, support, and API reference are Coming Soon.
             </p>
-            <p style={s.footerCopy}>© 2026 Holland Systems · Enterprise Talent Intelligence</p>
+            <p style={s.footerCopy}>Copyright 2026 Holland Systems - Enterprise Talent Intelligence</p>
           </div>
         </div>
       </footer>
@@ -625,16 +625,17 @@ function TiltCard({
   onToggleFavorite: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const CardWrapper = module.available ? Link : "div";
+  const CardWrapper: ElementType = module.available ? Link : "div";
   const cardProps = module.available
     ? { href: module.href }
     : {};
 
   return (
-    <CardWrapper {...cardProps as any}>
+    <CardWrapper {...cardProps}>
       <div 
         style={{
           ...s.cardGlass,
+          ...(!module.available ? s.cardDisabled : {}),
           animation: `fadeInUp 0.6s ease-out ${delay}s backwards`,
         }}
         className="texture-surface-2 texture-interactive"
@@ -657,7 +658,7 @@ function TiltCard({
           }}
           title={isFavorited ? "Remove from favorites" : "Add to favorites"}
         >
-          {isFavorited ? "❤️" : "🤍"}
+          {isFavorited ? "Saved" : "Save"}
         </button>
         
         <div style={s.cardContent}>
@@ -678,9 +679,13 @@ function TiltCard({
           </div>
           <h3 style={s.cardTitle}>{module.name}</h3>
           <p style={s.cardDesc}>{module.description}</p>
-          {module.available && (
+          {module.available ? (
             <div style={s.cardAction}>
-              Launch Module →
+              Launch Module
+            </div>
+          ) : (
+            <div style={s.upcomingTag}>
+              Coming Soon
             </div>
           )}
         </div>
@@ -729,7 +734,7 @@ function UpcomingTiltCard({ module, delay }: { module: Module; delay: number }) 
         {/* Progress Bar */}
         <div style={s.progressContainer}>
           <div style={s.progressHeader}>
-            <span style={s.progressLabel}>Development Progress</span>
+            <span style={s.progressLabel}>Roadmap readiness</span>
             <span style={s.progressValue}>{progress}%</span>
           </div>
           <div style={s.progressBar}>
@@ -742,74 +747,7 @@ function UpcomingTiltCard({ module, delay }: { module: Module; delay: number }) 
         </div>
         
         <div style={s.upcomingTag}>
-          Coming Soon
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ModuleCard({ module }: { module: Module }) {
-  const CardWrapper = module.available ? Link : "div";
-  const cardProps = module.available
-    ? { href: module.href, style: s.cardGlass }
-    : { style: {...s.cardGlass, ...s.cardDisabled} };
-
-  return (
-    <CardWrapper {...cardProps as any}>
-      <div style={s.cardGlow}></div>
-      <div style={s.cardContent}>
-        <div style={s.cardHeader}>
-          <div style={s.cardIconContainer}>
-            <span style={s.cardIcon}>{module.icon}</span>
-          </div>
-          {module.badge && (
-            <div style={{
-              ...s.badge,
-              background: `${module.badgeColor}15`,
-              border: `1px solid ${module.badgeColor}40`,
-              color: module.badgeColor
-            }}>
-              {module.badge}
-            </div>
-          )}
-        </div>
-        <h3 style={s.cardTitle}>{module.name}</h3>
-        <p style={s.cardDesc}>{module.description}</p>
-        {module.available && (
-          <div style={s.cardAction}>
-            Launch Module →
-          </div>
-        )}
-      </div>
-    </CardWrapper>
-  );
-}
-
-function UpcomingModuleCard({ module }: { module: Module }) {
-  return (
-    <div style={s.upcomingCard}>
-      <div style={s.upcomingCardContent}>
-        <div style={s.cardHeader}>
-          <div style={s.upcomingIconContainer}>
-            <span style={s.cardIcon}>{module.icon}</span>
-          </div>
-          {module.badge && (
-            <div style={{
-              ...s.upcomingBadgeSmall,
-              background: `${module.badgeColor}15`,
-              border: `1px solid ${module.badgeColor}40`,
-              color: module.badgeColor
-            }}>
-              {module.badge}
-            </div>
-          )}
-        </div>
-        <h3 style={s.cardTitle}>{module.name}</h3>
-        <p style={s.cardDesc}>{module.description}</p>
-        <div style={s.upcomingStatus}>
-          <div style={s.upcomingDot}></div>
-          <span>In Development</span>
+          Roadmap Preview - Coming Soon
         </div>
       </div>
     </div>
@@ -1136,9 +1074,10 @@ const s = {
     position: "relative" as const,
     padding: "var(--space-8)",
     borderRadius: 8,
-    background: "var(--surface-1)",
-    border: "1px dashed var(--border-default)",
+    background: "linear-gradient(180deg, var(--surface-1), var(--surface-2))",
+    border: "1px solid var(--border-subtle)",
     transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 12px 40px rgba(0, 0, 0, 0.16)",
   },
 
   upcomingCardContent: {
@@ -1153,7 +1092,7 @@ const s = {
     background: "var(--surface-3)",
     display: "grid",
     placeItems: "center",
-    border: "1px dashed var(--border-default)",
+    border: "1px solid var(--border-default)",
   },
 
   upcomingBadgeSmall: {
@@ -1185,17 +1124,18 @@ const s = {
   
   upcomingTag: {
     marginTop: 20,
-    display: "flex",
+    display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: "10px 16px",
-    background: "var(--surface-3)",
-    border: "1px solid var(--border-default)",
-    borderRadius: 8,
-    color: "var(--text-secondary)",
-    fontSize: 13,
-    fontWeight: 600,
+    padding: "8px 12px",
+    background: "var(--accent-lavender-glow)",
+    border: "1px solid var(--accent-lavender-dim)",
+    borderRadius: 999,
+    color: "var(--accent-lavender)",
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: "0.02em",
   },
   
   bellIcon: {
@@ -1424,11 +1364,11 @@ const s = {
     right: 12,
     background: "rgba(0, 0, 0, 0.6)",
     border: "none",
-    borderRadius: "50%",
+    borderRadius: 999,
     color: "white",
     cursor: "pointer",
-    fontSize: 16,
-    width: 32,
+    fontSize: 11,
+    width: 52,
     height: 32,
     display: "flex",
     alignItems: "center",

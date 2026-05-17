@@ -68,6 +68,10 @@ function pickRoleLabel(r: Role, i: number) {
   return r.title || r.name || pickRoleId(r, i);
 }
 
+function pickAssessmentId(r?: Role) {
+  return r?.assessment_id || r?.assessmentId || "";
+}
+
 function pickRowId(r: Row, i: number) {
   return r.candidate_id || r.candidateId || ("row-" + i);
 }
@@ -96,13 +100,17 @@ export default function DashboardClient() {
   const [verificationRequired, setVerificationRequired] = React.useState(false);
   const [resendMessage, setResendMessage] = React.useState<string | null>(null);
   const [resendingVerification, setResendingVerification] = React.useState(false);
+  const [copiedApplicantLink, setCopiedApplicantLink] = React.useState(false);
+  const [compareNotice, setCompareNotice] = React.useState<string | null>(null);
 
   const [rows, setRows] = React.useState<Row[]>([]);
+  const lastSubmissionsRoleRef = React.useRef<string>("");
   
   // Comparison state
   const [selectedCandidates, setSelectedCandidates] = React.useState<string[]>([]);
 
   function toggleCandidate(candidateId: string) {
+    setCompareNotice(null);
     setSelectedCandidates(prev => 
       prev.includes(candidateId) 
         ? prev.filter(id => id !== candidateId)
@@ -112,9 +120,10 @@ export default function DashboardClient() {
 
   function handleCompare() {
     if (selectedCandidates.length < 2) {
-      alert("Please select at least 2 candidates to compare");
+      setCompareNotice("Select at least two candidates before opening comparison.");
       return;
     }
+    setCompareNotice(null);
     window.location.href = `/employer/candidates/compare?ids=${selectedCandidates.join(",")}`;
   }
 
@@ -144,12 +153,26 @@ export default function DashboardClient() {
       let preferred = "";
       try {
         preferred = window.localStorage.getItem("latest_role_id") || "";
-      } catch (e) {}
+      } catch {}
 
-      if (preferred) {
+      const preferredExists = preferred && list.some(function (r, i) {
+        return pickRoleId(r, i) === preferred;
+      });
+
+      if (preferredExists) {
         setRoleId(preferred);
       } else if (list.length > 0) {
-        setRoleId(pickRoleId(list[0], 0));
+        const firstRoleId = pickRoleId(list[0], 0);
+        setRoleId(firstRoleId);
+        if (preferred && preferred !== firstRoleId) {
+          try {
+            window.localStorage.setItem("latest_role_id", firstRoleId);
+          } catch {}
+        }
+      } else {
+        setRoleId("");
+        setRows([]);
+        lastSubmissionsRoleRef.current = "";
       }
     } catch (e: unknown) {
       const err = e as Error;
@@ -180,35 +203,39 @@ export default function DashboardClient() {
     }
   }
 
-  async function loadSubmissions(currentRoleId: string) {
+  async function loadSubmissions(currentRoleId: string, force = false) {
     if (!currentRoleId) {
       setRows([]);
       setLoading(false);
       return;
     }
 
+    if (!force && lastSubmissionsRoleRef.current === currentRoleId) {
+      return;
+    }
+
+    lastSubmissionsRoleRef.current = currentRoleId;
     setLoading(true);
     setError(null);
+    setSelectedCandidates([]);
     try {
       const url = `/api/employer/roles/${encodeURIComponent(currentRoleId)}/submissions`;
       const res = await fetch(url, { 
         credentials: "include"
       });
+      if (res.status === 404) {
+        setRows([]);
+        setError(null);
+        return;
+      }
       const data = await safeJson(res);
       if (!res.ok) {
-        if (res.status === 404 && data && data.detail === "Role not found") {
-          // Role doesn't belong to current user - clear cache and show helpful error
-          try {
-            window.localStorage.removeItem("latest_role_id");
-          } catch (e) {}
-          throw new Error("Role not found. You may be logged in with a different account. Please logout and login again.");
-        }
-        throw new Error(data && data.detail ? String(data.detail) : "Failed to load submissions");
+        throw new Error(data && data.detail ? String(data.detail) : "We could not refresh applicants right now.");
       }
       setRows(normalizeRows(data));
     } catch (e: unknown) {
       const err = e as Error;
-      setError(err && err.message ? String(err.message) : "Failed to load submissions");
+      setError(err && err.message ? String(err.message) : "We could not refresh applicants right now.");
     } finally {
       setLoading(false);
     }
@@ -216,7 +243,6 @@ export default function DashboardClient() {
 
   React.useEffect(function () {
     loadRoles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function deleteRole(roleIdToDelete: string, roleName: string) {
@@ -257,10 +283,9 @@ export default function DashboardClient() {
     // persist selected role for convenience
     try {
       window.localStorage.setItem("latest_role_id", roleId);
-    } catch (e) {}
+    } catch {}
 
     loadSubmissions(roleId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleId]);
 
   const statusConfig: Record<string, { bg: string; border: string; icon: string }> = {
@@ -268,6 +293,26 @@ export default function DashboardClient() {
     Processing: { bg: "rgba(196, 176, 137, 0.15)", border: "var(--color-warning)", icon: "" },
     Failed: { bg: "rgba(196, 137, 137, 0.15)", border: "var(--color-error)", icon: "" }
   };
+  const selectedRole = roles.find(function (r, i) {
+    return pickRoleId(r, i) === roleId;
+  });
+  const selectedRoleLabel = selectedRole ? pickRoleLabel(selectedRole, roles.indexOf(selectedRole)) : roleId;
+  const selectedAssessmentId = pickAssessmentId(selectedRole);
+  const applicantPath = selectedAssessmentId ? `/applicant/${selectedAssessmentId}` : "";
+  const applicantLink = applicantPath && typeof window !== "undefined" ? `${window.location.origin}${applicantPath}` : applicantPath;
+
+  async function copyApplicantLink() {
+    if (!applicantLink) return;
+    try {
+      await window.navigator.clipboard.writeText(applicantLink);
+      setCopiedApplicantLink(true);
+      window.setTimeout(function () {
+        setCopiedApplicantLink(false);
+      }, 1800);
+    } catch {
+      setCopiedApplicantLink(false);
+    }
+  }
 
   if (verificationRequired) {
     return (
@@ -382,7 +427,7 @@ export default function DashboardClient() {
               color: "var(--text-tertiary)",
               margin: 0,
             }}>
-              Select to view submissions
+              Select a role to manage applicants
             </p>
           </div>
 
@@ -417,7 +462,7 @@ export default function DashboardClient() {
                 <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 12 }}>Empty</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", marginBottom: 8 }}>No roles yet</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 16 }}>
-                  Create your first role
+                  Create your first role to generate an EPQ assessment link.
                 </div>
                 <Link
                   data-tour="create-role-empty"
@@ -435,7 +480,7 @@ export default function DashboardClient() {
                     fontSize: 13,
                   }}
                 >
-                  Create Role
+                  Create First Role
                 </Link>
               </div>
             ) : (
@@ -540,7 +585,7 @@ export default function DashboardClient() {
                               e.currentTarget.style.background = "var(--accent-lavender-glow)";
                             }}
                           >
-                            Setup EPQ
+                            Set Up Assessment
                           </a>
                         )}
                         <a
@@ -624,9 +669,9 @@ export default function DashboardClient() {
                 width: "100%",
                 padding: "var(--space-3) var(--space-4)",
                 borderRadius: 6,
-                background: "var(--accent-mint-glow)",
-                border: "1px solid var(--accent-mint-dim)",
-                color: "var(--accent-mint)",
+                background: "var(--accent-blue-glow)",
+                border: "1px solid var(--accent-blue-dim)",
+                color: "var(--accent-blue)",
                 cursor: "pointer",
                 fontWeight: 500,
                 textDecoration: "none",
@@ -638,13 +683,13 @@ export default function DashboardClient() {
                 transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)",
               }}
               onMouseEnter={function(e) {
-                e.currentTarget.style.background = "rgba(196, 231, 212, 0.12)";
+                e.currentTarget.style.background = "rgba(180, 199, 231, 0.12)";
               }}
               onMouseLeave={function(e) {
-                e.currentTarget.style.background = "var(--accent-mint-glow)";
+                e.currentTarget.style.background = "var(--accent-blue-glow)";
               }}
             >
-              Create New Role
+              Create Role / Assessment
             </Link>
           </div>
         </aside>
@@ -674,7 +719,7 @@ export default function DashboardClient() {
                   Dashboard
                 </div>
                 <div style={{ color: "var(--text-tertiary)", fontSize: "var(--text-sm)", marginTop: "var(--space-1)" }}>
-                  {roleId ? `Viewing submissions for ${roles.find(r => pickRoleId(r, roles.indexOf(r)) === roleId) ? pickRoleLabel(roles.find(r => pickRoleId(r, roles.indexOf(r)) === roleId)!, roles.indexOf(roles.find(r => pickRoleId(r, roles.indexOf(r)) === roleId)!)) : roleId}` : "Select a role from the sidebar"}
+                  {roleId ? `Viewing ${selectedRoleLabel}` : "Select a role from the sidebar"}
                 </div>
               </div>
 
@@ -696,7 +741,7 @@ export default function DashboardClient() {
                     transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 >
-                  Start Demo Walkthrough
+                  Start Product Tour
                 </button>
 
                 <a
@@ -844,9 +889,125 @@ export default function DashboardClient() {
               </div>
             ) : (
               <>
+      <section
+        data-tour="applicant-share"
+        style={{
+          position: "relative" as const,
+          zIndex: 1,
+          padding: "var(--space-5)",
+          marginBottom: "var(--space-5)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: 8,
+          background: "var(--surface-1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-4)",
+          flexWrap: "wrap" as const,
+        }}
+      >
+        <div style={{ minWidth: 240, flex: 1 }}>
+          <div style={{
+            fontSize: "var(--text-xs)",
+            color: "var(--text-tertiary)",
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.08em",
+            fontWeight: 700,
+            marginBottom: "var(--space-2)",
+          }}>
+            Next step
+          </div>
+          <div style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "var(--text-base)", marginBottom: 4 }}>
+            {selectedAssessmentId ? "Share the applicant assessment link" : "Set up the EPQ assessment"}
+          </div>
+          <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
+            {selectedAssessmentId
+              ? "Send this link to a test applicant. Completed submissions will appear below with candidate details and PDF status."
+              : "This role exists, but it does not have an active assessment link yet. Set up EPQ to start collecting applicants."}
+          </div>
+        </div>
+
+        {selectedAssessmentId ? (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            flexWrap: "wrap" as const,
+          }}>
+            <code style={{
+              padding: "10px 12px",
+              borderRadius: 6,
+              border: "1px solid var(--border-default)",
+              background: "var(--surface-2)",
+              color: "var(--text-secondary)",
+              fontSize: "var(--text-xs)",
+              maxWidth: 360,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap" as const,
+            }}>
+              {applicantLink}
+            </code>
+            <button
+              type="button"
+              onClick={copyApplicantLink}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 6,
+                background: "var(--accent-blue-glow)",
+                border: "1px solid var(--accent-blue-dim)",
+                color: "var(--accent-blue)",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              {copiedApplicantLink ? "Copied" : "Copy Link"}
+            </button>
+            <a
+              href={applicantPath}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 6,
+                background: "var(--surface-2)",
+                border: "1px solid var(--border-default)",
+                color: "var(--text-primary)",
+                textDecoration: "none",
+                fontWeight: 600,
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              Open Applicant Form
+            </a>
+          </div>
+        ) : (
+          <a
+            href={`/employer/roles/${encodeURIComponent(roleId)}/setup`}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 6,
+              background: "var(--accent-lavender-glow)",
+              border: "1px solid var(--accent-lavender-dim)",
+              color: "var(--accent-lavender)",
+              textDecoration: "none",
+              fontWeight: 700,
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            Set Up EPQ Assessment
+          </a>
+        )}
+      </section>
+
       {error && (
-        <Alert type="error" title="Could not load submissions" onRetry={function () { loadSubmissions(roleId); }}>
+        <Alert type="error" title="Applicants are not available yet" onRetry={function () { loadSubmissions(roleId, true); }}>
           {error}
+        </Alert>
+      )}
+
+      {compareNotice && (
+        <Alert type="info" title="Candidate comparison">
+          {compareNotice}
         </Alert>
       )}
 
@@ -854,7 +1015,7 @@ export default function DashboardClient() {
         <div style={{ marginTop: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
             <LoadingSpinner />
-            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "var(--text-sm)" }}>Loading submissions...</span>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "var(--text-sm)" }}>Checking applicant activity...</span>
           </div>
 
           {[1, 2, 3].map(function (i) {
@@ -885,10 +1046,57 @@ export default function DashboardClient() {
           borderRadius: 8,
           background: "var(--surface-1)",
         }}>
-          <div style={{ fontWeight: 600, marginBottom: "var(--space-2)", fontSize: "var(--text-lg)", color: "var(--text-primary)" }}>No submissions</div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
-            Share your role assessment link to start receiving applicant submissions.
+          <div style={{
+            display: "inline-flex",
+            padding: "var(--space-1) var(--space-3)",
+            borderRadius: 999,
+            background: "var(--accent-mint-glow)",
+            border: "1px solid var(--accent-mint-dim)",
+            color: "var(--accent-mint)",
+            fontSize: "var(--text-xs)",
+            fontWeight: 700,
+            marginBottom: "var(--space-4)",
+          }}>
+            Ready for applicants
           </div>
+          <div style={{ fontWeight: 600, marginBottom: "var(--space-2)", fontSize: "var(--text-lg)", color: "var(--text-primary)" }}>No applicants yet</div>
+          <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", lineHeight: 1.6, maxWidth: 520, margin: "0 auto var(--space-5)" }}>
+            This role is set up for review. Share the applicant link above, submit a test applicant, and completed candidates will appear here.
+          </div>
+          {selectedAssessmentId ? (
+            <button
+              type="button"
+              onClick={copyApplicantLink}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 6,
+                background: "var(--accent-blue-glow)",
+                border: "1px solid var(--accent-blue-dim)",
+                color: "var(--accent-blue)",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              {copiedApplicantLink ? "Applicant Link Copied" : "Copy Applicant Link"}
+            </button>
+          ) : (
+            <a
+              href={`/employer/roles/${encodeURIComponent(roleId)}/setup`}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 6,
+                background: "var(--accent-lavender-glow)",
+                border: "1px solid var(--accent-lavender-dim)",
+                color: "var(--accent-lavender)",
+                textDecoration: "none",
+                fontWeight: 700,
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              Set Up Assessment Link
+            </a>
+          )}
         </div>
       )}
 
@@ -1000,20 +1208,19 @@ export default function DashboardClient() {
                             href={`/employer/pdf-viewer?url=${encodeURIComponent(pdf)}&name=${encodeURIComponent(r.name || id)}`}
                             style={{ 
                               fontWeight: 700, 
-                              background: "rgba(255,255,255,0.08)",
-                              color: "#ffffff",
+                              background: "var(--accent-blue-glow)",
+                              color: "var(--accent-blue)",
                               textDecoration: "none",
-                              padding: "6px 14px",
-                              borderRadius: 8,
-                              fontSize: 13,
-                              border: "1px solid rgba(255,255,255,0.1)",
-                              backdropFilter: "blur(10px)",
-                              transition: "all 0.2s ease"
+                              padding: "var(--space-1) var(--space-3)",
+                              borderRadius: 6,
+                              fontSize: "var(--text-xs)",
+                              border: "1px solid var(--accent-blue-dim)",
+                              transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)"
                             }}
-                            onMouseEnter={function(e) { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                            onMouseLeave={function(e) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                            onMouseEnter={function(e) { e.currentTarget.style.background = "rgba(180, 199, 231, 0.12)"; }}
+                            onMouseLeave={function(e) { e.currentTarget.style.background = "var(--accent-blue-glow)"; }}
                           >
-                            PDF
+                            View Report
                           </a>
                         )}
                       </div>

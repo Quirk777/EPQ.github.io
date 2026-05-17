@@ -36,6 +36,8 @@ export default function BrandingPage() {
   const [preview, setPreview] = useState<UploadResponse | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string>('transparent');
   const [dragActive, setDragActive] = useState(false);
 
@@ -50,8 +52,8 @@ export default function BrandingPage() {
         const data = await res.json();
         setSettings(data.branding);
       }
-    } catch (err) {
-      console.error('Failed to load branding:', err);
+    } catch {
+      setError('Branding settings are not available right now. You can continue the demo from the dashboard.');
     } finally {
       setLoading(false);
     }
@@ -59,6 +61,8 @@ export default function BrandingPage() {
 
   const handleUpload = async (file: File) => {
     setUploading(true);
+    setMessage(null);
+    setError(null);
     
     const formData = new FormData();
     formData.append('logo', file);
@@ -78,8 +82,8 @@ export default function BrandingPage() {
       const data = await res.json();
       setPreview(data);
       setSelectedVariant('transparent');
-    } catch (err: any) {
-      alert('Upload failed: ' + err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Logo upload failed. Please try again with a PNG or JPG under 5MB.');
     } finally {
       setUploading(false);
     }
@@ -95,12 +99,12 @@ export default function BrandingPage() {
       });
 
       if (res.ok) {
-        alert('Logo variant applied! Refresh the page to see changes.');
+        setMessage('Logo variant applied. Refresh the page to see it across the workspace.');
         setPreview(null);
         loadBranding();
       }
-    } catch (err) {
-      alert('Failed to apply variant');
+    } catch {
+      setError('Could not apply that logo variant right now.');
     }
   };
 
@@ -114,11 +118,11 @@ export default function BrandingPage() {
       });
 
       if (res.ok) {
-        alert('Logo removed successfully');
+        setMessage('Logo removed successfully.');
         loadBranding();
       }
-    } catch (err) {
-      alert('Failed to delete logo');
+    } catch {
+      setError('Could not remove the logo right now.');
     }
   };
 
@@ -180,7 +184,7 @@ export default function BrandingPage() {
         }}>
           <nav style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Link href="/employer/dashboard" style={navigationButton()}>
-              ← Dashboard
+              Back to Dashboard
             </Link>
             <Link href="/employer/profile" style={navigationButton()}>
               Profile
@@ -197,6 +201,18 @@ export default function BrandingPage() {
             </span>
           </nav>
         </div>
+
+        {message && (
+          <div style={{ ...styles.notice, ...styles.noticeSuccess }}>
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div style={{ ...styles.notice, ...styles.noticeError }}>
+            {error}
+          </div>
+        )}
 
         <h1 data-tour="branding-header" style={{
           fontSize: 28, 
@@ -247,14 +263,14 @@ export default function BrandingPage() {
                 disabled={uploading}
               />
               <label htmlFor="logo-upload" style={styles.uploadButton}>
-                {uploading ? 'Processing...' : '📁 Choose File or Drag & Drop'}
+                {uploading ? 'Processing...' : 'Choose File or Drag & Drop'}
               </label>
               <p style={{ 
                 fontSize: 14, 
                 color: 'var(--text-secondary)', 
                 marginTop: 12 
               }}>
-                PNG or JPG • Max 5MB • Recommended: 800×200px
+                PNG or JPG - Max 5MB - Recommended: 800x200px
               </p>
             </div>
           ) : settings?.has_logo && !preview ? (
@@ -310,7 +326,7 @@ export default function BrandingPage() {
               color: 'var(--text-secondary)', 
               marginBottom: 20 
             }}>
-              We've automatically generated variations. Select which one to use:
+              We have automatically generated variations. Select which one to use:
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
@@ -431,12 +447,12 @@ const styles = {
   uploadButton: {
     display: 'inline-block',
     padding: '12px 24px',
-    backgroundColor: 'var(--accent-blue)',
-    color: 'var(--surface-0)',
+    backgroundColor: 'var(--accent-blue-glow)',
+    color: 'var(--accent-blue)',
     borderRadius: 8,
     cursor: 'pointer',
     fontWeight: 600,
-    border: 'none',
+    border: '1px solid var(--accent-blue-dim)',
     transition: 'all 0.2s'
   } as const,
   
@@ -458,8 +474,9 @@ const styles = {
   } as const,
   
   buttonPrimary: {
-    backgroundColor: 'var(--accent-blue)',
-    color: 'var(--surface-0)'
+    backgroundColor: 'var(--accent-blue-glow)',
+    color: 'var(--accent-blue)',
+    border: '1px solid var(--accent-blue-dim)'
   } as const,
   
   buttonSecondary: {
@@ -472,6 +489,26 @@ const styles = {
     backgroundColor: 'rgba(196, 137, 137, 0.15)',
     color: 'var(--color-error)',
     border: '1px solid rgba(196, 137, 137, 0.3)'
+  } as const,
+
+  notice: {
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 20,
+    fontSize: 14,
+    lineHeight: 1.5,
+  } as const,
+
+  noticeSuccess: {
+    background: 'rgba(133, 182, 156, 0.12)',
+    border: '1px solid rgba(133, 182, 156, 0.32)',
+    color: 'var(--color-success)',
+  } as const,
+
+  noticeError: {
+    background: 'rgba(196, 137, 137, 0.12)',
+    border: '1px solid rgba(196, 137, 137, 0.32)',
+    color: 'var(--color-error)',
   } as const
 };
 

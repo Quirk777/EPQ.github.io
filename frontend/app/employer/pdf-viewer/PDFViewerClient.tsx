@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 function safePdfPath(url: string) {
@@ -23,8 +23,14 @@ export default function PDFViewerClient() {
   
   const [showControls, setShowControls] = useState(true);
   const pdfUrl = typeof window === "undefined" ? rawPdfUrl : safePdfPath(rawPdfUrl);
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const displayUrl = pdfUrl ? `${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH` : "";
+  const displayUrl = useMemo(() => {
+    if (!pdfUrl) return "";
+    // Hint to embedded viewers to minimize built-in UI; support varies by browser.
+    return `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+  }, [pdfUrl]);
   const downloadUrl = pdfUrl ? `${pdfUrl}?download=1` : "";
 
   const handleDownload = () => {
@@ -40,6 +46,40 @@ export default function PDFViewerClient() {
     window.print();
   };
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function preflight() {
+      if (!pdfUrl) return;
+      setReady(false);
+      setLoadError(null);
+      try {
+        const res = await fetch(pdfUrl, { method: "HEAD", credentials: "include" });
+        if (!res.ok) {
+          const msg = (await res.text().catch(() => "")) || res.statusText || "PDF not available";
+          if (!cancelled) setLoadError(`[${res.status}] ${msg}`);
+          return;
+        }
+
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        if (ct && !ct.includes("application/pdf")) {
+          if (!cancelled) setLoadError("PDF endpoint did not return a PDF.");
+          return;
+        }
+
+        if (!cancelled) setReady(true);
+      } catch (e) {
+        const msg = (e as Error)?.message || "Failed to load PDF";
+        if (!cancelled) setLoadError(msg);
+      }
+    }
+
+    preflight();
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfUrl]);
+
   if (!pdfUrl) {
     return (
       <div style={s.page}>
@@ -48,6 +88,25 @@ export default function PDFViewerClient() {
           <Link href="/employer/dashboard" style={s.btnPrimary}>
             Return to Dashboard
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={s.page}>
+        <div style={s.errorContainer}>
+          <h1 style={s.errorTitle}>Report not available</h1>
+          <p style={s.errorBody}>{loadError}</p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+            <Link href="/employer/dashboard" style={s.btnPrimary}>
+              Return to Dashboard
+            </Link>
+            <button onClick={handleDownload} style={s.toolbarBtn as React.CSSProperties}>
+              Download PDF
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -101,25 +160,31 @@ export default function PDFViewerClient() {
 
       {/* PDF Viewer */}
       <div style={s.viewerShell}>
-        <object
-          data={displayUrl}
-          type="application/pdf"
-          style={s.pdfObject}
-          aria-label="PDF report preview"
-        >
-          <iframe
-            id="pdf-viewer"
-            src={displayUrl}
-            title="PDF Report"
-            style={s.iframe}
-          />
+        {!ready ? (
           <div style={s.fallback}>
-            <p style={s.fallbackText}>The PDF preview is not available in this browser.</p>
-            <button onClick={handleDownload} style={s.btnPrimary}>
-              Download PDF
-            </button>
+            <p style={s.fallbackText}>Loading report preview...</p>
           </div>
-        </object>
+        ) : (
+          <object
+            data={displayUrl}
+            type="application/pdf"
+            style={s.pdfObject}
+            aria-label="PDF report preview"
+          >
+            <iframe
+              id="pdf-viewer"
+              src={displayUrl}
+              title="PDF Report"
+              style={s.iframe}
+            />
+            <div style={s.fallback}>
+              <p style={s.fallbackText}>The PDF preview is not available in this browser.</p>
+              <button onClick={handleDownload} style={s.btnPrimary}>
+                Download PDF
+              </button>
+            </div>
+          </object>
+        )}
       </div>
     </div>
   );
@@ -140,6 +205,8 @@ const s = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap" as const,
     padding: "12px 20px",
     backgroundColor: "var(--surface-1)",
     borderBottom: "1px solid var(--border-default)",
@@ -150,17 +217,22 @@ const s = {
     display: "flex",
     alignItems: "center",
     gap: 16,
+    minWidth: 0,
   },
   toolbarRight: {
     display: "flex",
     alignItems: "center",
     gap: 8,
+    flexWrap: "wrap" as const,
   },
   toolbarTitle: {
     fontSize: 16,
     fontWeight: 600,
     color: "var(--text-primary)",
     margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   toolbarBtn: {
     display: "flex",
@@ -226,6 +298,13 @@ const s = {
     fontWeight: 700,
     color: "var(--text-primary)",
     margin: 0,
+  },
+  errorBody: {
+    color: "var(--text-secondary)",
+    margin: 0,
+    maxWidth: 640,
+    textAlign: "center" as const,
+    lineHeight: 1.4,
   },
   btnPrimary: {
     padding: "12px 20px",

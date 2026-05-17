@@ -11,23 +11,26 @@ interface FunnelStage {
   conversion_from_start: number;
 }
 
-interface ABVariant {
-  id: string;
-  name: string;
-  title: string;
-  views: number;
-  applications: number;
-  completions: number;
-  conversion_rate: number;
-}
-
 export default function AnalyticsClient() {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [roles, setRoles] = useState<Array<{ id: string; title: string }>>([]);
   const [timeRange, setTimeRange] = useState("7d");
   const [funnelData, setFunnelData] = useState<FunnelStage[]>([]);
 
+  async function loadRoles() {
+    try {
+      const res = await fetch("/api/employer/roles", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setRoles(data.roles || []);
+      }
+    } catch {
+      // Analytics uses demo data when role metadata is unavailable.
+    }
+  }
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRoles();
     // Mock funnel data for demo
     setFunnelData([
@@ -39,18 +42,6 @@ export default function AnalyticsClient() {
       { stage: "hired", stage_name: "Hired", count: 9, conversion_from_previous: 75.0, conversion_from_start: 0.7 },
     ]);
   }, []);
-
-  async function loadRoles() {
-    try {
-      const res = await fetch("/api/employer/roles", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setRoles(data.roles || []);
-      }
-    } catch (error) {
-      console.error("Failed to load roles:", error);
-    }
-  }
 
   // Mock stats
   const stats = [
@@ -97,8 +88,8 @@ export default function AnalyticsClient() {
               <Link href="/employer/modules" style={s.btnGlass}>
                 Modules
               </Link>
-              <button style={s.btnPrimary}>
-                Export Report
+              <button type="button" disabled style={{ ...s.btnPrimary, ...s.btnDisabled }}>
+                Export Coming Soon
               </button>
             </div>
           </div>
@@ -140,7 +131,7 @@ export default function AnalyticsClient() {
             </div>
           </div>
 
-          <button style={s.refreshBtn}>
+          <button type="button" style={s.refreshBtn} onClick={loadRoles}>
             Refresh
           </button>
         </div>
@@ -404,6 +395,11 @@ const s = {
     fontSize: "var(--text-sm)",
     cursor: "pointer",
     transition: "all 180ms cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+
+  btnDisabled: {
+    opacity: 0.72,
+    cursor: "not-allowed",
   },
 
   filtersCard: {

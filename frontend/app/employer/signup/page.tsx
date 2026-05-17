@@ -54,14 +54,11 @@ export default function EmployerSignupPage() {
 
       if (!res.ok) {
         let errorMessage = "Sign up failed";
-        let fieldError = null;
-
         if (data?.detail) {
           if (typeof data.detail === 'string') {
             errorMessage = data.detail;
           } else if (data.detail.message) {
             errorMessage = data.detail.message;
-            fieldError = data.detail.field || null;
           }
         }
 
@@ -186,7 +183,7 @@ export default function EmployerSignupPage() {
               lineHeight: 1.6,
               margin: 0,
             }}>
-              You'll be handling sensitive candidate information.<br />
+              You will be handling sensitive candidate information.<br />
               We verify accounts to keep that data protected.
             </p>
           </div>
@@ -268,10 +265,10 @@ export default function EmployerSignupPage() {
             <div style={{
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255, 255, 255, 0.8)",
+              color: "var(--text-primary)",
               marginBottom: 8,
             }}>
-              Company name <span style={{ color: "rgba(255, 255, 255, 0.4)", fontWeight: 400 }}>(optional)</span>
+              Company name <span style={{ color: "var(--text-tertiary)", fontWeight: 400 }}>(optional)</span>
             </div>
             <input
               type="text"
@@ -282,20 +279,20 @@ export default function EmployerSignupPage() {
                 width: "100%",
                 padding: "12px 16px",
                 borderRadius: 12,
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.05)",
-                color: "#ffffff",
+                border: "1px solid var(--border-default)",
+                background: "var(--surface-2)",
+                color: "var(--text-primary)",
                 fontSize: 15,
                 outline: "none",
                 transition: "all 0.2s ease",
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = "rgba(99, 102, 241, 0.5)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                e.currentTarget.style.borderColor = "var(--accent-blue)";
+                e.currentTarget.style.background = "var(--surface-3)";
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                e.currentTarget.style.borderColor = "var(--border-default)";
+                e.currentTarget.style.background = "var(--surface-2)";
               }}
             />
           </label>
@@ -305,10 +302,10 @@ export default function EmployerSignupPage() {
             <div style={{
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255, 255, 255, 0.8)",
+              color: "var(--text-primary)",
               marginBottom: 8,
             }}>
-              First name <span style={{ color: "rgba(255, 255, 255, 0.4)", fontWeight: 400 }}>(optional)</span>
+              First name <span style={{ color: "var(--text-tertiary)", fontWeight: 400 }}>(optional)</span>
             </div>
             <input
               type="text"
@@ -319,20 +316,20 @@ export default function EmployerSignupPage() {
                 width: "100%",
                 padding: "12px 16px",
                 borderRadius: 12,
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.05)",
-                color: "#ffffff",
+                border: "1px solid var(--border-default)",
+                background: "var(--surface-2)",
+                color: "var(--text-primary)",
                 fontSize: 15,
                 outline: "none",
                 transition: "all 0.2s ease",
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = "rgba(99, 102, 241, 0.5)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                e.currentTarget.style.borderColor = "var(--accent-blue)";
+                e.currentTarget.style.background = "var(--surface-3)";
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                e.currentTarget.style.borderColor = "var(--border-default)";
+                e.currentTarget.style.background = "var(--surface-2)";
               }}
             />
           </label>
@@ -342,7 +339,7 @@ export default function EmployerSignupPage() {
             <div style={{
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255, 255, 255, 0.8)",
+              color: "var(--text-primary)",
               marginBottom: 8,
             }}>
               Password
@@ -358,20 +355,20 @@ export default function EmployerSignupPage() {
                   width: "100%",
                   padding: "12px 50px 12px 16px",
                   borderRadius: 12,
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  color: "#ffffff",
+                  border: "1px solid var(--border-default)",
+                  background: "var(--surface-2)",
+                  color: "var(--text-primary)",
                   fontSize: 15,
                   outline: "none",
                   transition: "all 0.2s ease",
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(99, 102, 241, 0.5)";
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                  e.currentTarget.style.borderColor = "var(--accent-blue)";
+                  e.currentTarget.style.background = "var(--surface-3)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                  e.currentTarget.style.borderColor = "var(--border-default)";
+                  e.currentTarget.style.background = "var(--surface-2)";
                 }}
               />
               <button
@@ -402,13 +399,13 @@ export default function EmployerSignupPage() {
               marginBottom: 24,
               padding: "12px 16px",
               borderRadius: 12,
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border-default)",
             }}>
               <div style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: "rgba(255, 255, 255, 0.6)",
+                color: "var(--text-secondary)",
                 marginBottom: 8,
               }}>
                 Password requirements:
@@ -423,7 +420,7 @@ export default function EmployerSignupPage() {
                       alignItems: "center",
                       gap: 8,
                       fontSize: 13,
-                      color: passes ? "#10b981" : "rgba(255, 255, 255, 0.5)",
+                      color: passes ? "var(--color-success)" : "var(--text-tertiary)",
                       marginTop: 6,
                     }}
                   >
@@ -443,9 +440,9 @@ export default function EmployerSignupPage() {
               width: "100%",
               padding: "12px 16px",
               borderRadius: 12,
-              border: "1px solid #111",
-              background: canSubmit ? "#111" : "#f5f5f5",
-              color: canSubmit ? "#ffffff" : "#9ca3af",
+              color: canSubmit ? "var(--accent-blue)" : "var(--text-tertiary)",
+              background: canSubmit ? "var(--accent-blue-glow)" : "var(--surface-2)",
+              border: canSubmit ? "1px solid var(--accent-blue-dim)" : "1px solid var(--border-default)",
               fontSize: 15,
               fontWeight: 700,
               cursor: canSubmit ? "pointer" : "not-allowed",
@@ -453,12 +450,12 @@ export default function EmployerSignupPage() {
             }}
             onMouseEnter={(e) => {
               if (canSubmit) {
-                e.currentTarget.style.background = "#1f1f1f";
+                e.currentTarget.style.background = "rgba(180, 199, 231, 0.12)";
               }
             }}
             onMouseLeave={(e) => {
               if (canSubmit) {
-                e.currentTarget.style.background = "#111";
+                e.currentTarget.style.background = "var(--accent-blue-glow)";
               }
             }}
           >
@@ -470,13 +467,13 @@ export default function EmployerSignupPage() {
             marginTop: 24,
             textAlign: "center",
             fontSize: 14,
-            color: "rgba(255, 255, 255, 0.6)",
+            color: "var(--text-secondary)",
           }}>
             Already have an account?{" "}
             <Link
               href="/employer/login"
               style={{
-                color: "#8b5cf6",
+                color: "var(--accent-blue)",
                 textDecoration: "none",
                 fontWeight: 600,
               }}
@@ -490,11 +487,11 @@ export default function EmployerSignupPage() {
             marginTop: 20,
             padding: "12px 16px",
             borderRadius: 12,
-            background: "rgba(16, 185, 129, 0.05)",
-            border: "1px solid rgba(16, 185, 129, 0.2)",
+            background: "rgba(133, 182, 156, 0.10)",
+            border: "1px solid rgba(133, 182, 156, 0.28)",
             textAlign: "center",
             fontSize: 12,
-            color: "rgba(16, 185, 129, 0.9)",
+            color: "var(--color-success)",
           }}>
             Secure connection - your data is encrypted
           </div>
